@@ -5,9 +5,7 @@ import DashboardLayout from "../pages/components/public/dashboardLayout";
 import SignUp from "../pages/components/public/SignUp";
 import LogIn from "../pages/components/public/LogIn";
 import AdminDashbboardLayout from "../pages/components/Organizer/adminDashbboardLayout";
-import Overview from "../pages/ui/Organizer/Overview";
 import CreateEvent from "../pages/ui/Organizer/CreateEvent";
-import EventBuilder from "../pages/ui/Organizer/EventBuilder";
 import CustomEvent from "../pages/ui/Organizer/CustomEvent";
 
 const router = createBrowserRouter([
@@ -26,10 +24,6 @@ const router = createBrowserRouter([
     {
         element:<AdminDashbboardLayout/>,
         children:[
-            {
-                path:'/overview',
-                element:<Overview/>
-            },
             {
                 path:'/createEvent',
                 element:<CreateEvent/>
@@ -51,7 +45,7 @@ const router = createBrowserRouter([
         path:'/logIn'
     },
     {
-        element:<EventBuilder/>,
+        element:<CustomEvent/>,
         path:'/BuildEvent'
     },
     {

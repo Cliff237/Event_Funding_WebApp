@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
+  SCHOOL_ORGANIZER
+  ORGANIZER
+}
+
+enum EventStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum FieldType {
+  TEXT
+  NUMBER
+  SELECT
+  RADIO
+  CHECKBOX
+  EMAIL
+  TEL
+  FILE
+  IMAGE
+}
+
+enum PaymentMethod {
+  MOMO
+  OM
+  BANK
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  // phone     String?
+  password  String
+  profile   String?
+  role      Role     @default(ORGANIZER)
+  schoolId Int?
+  eventId Int?
+  school School? @relation(fields: [schoolId], references: [id])
+  events Event[] 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Notification Notification[]
+
+  Receipt Receipt[]
+}
+model School {
+  id Int @id @default(autoincrement())
+  name String
+  address String?
+  logo  String?
+  email String
+  city  String?
+  code  String?  // assigned by superadmin
+  approved Boolean? @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+    // Relations
+  admins User[]
+  events Event[]
+}
+model Event {
+  id           Int          @id @default(autoincrement())
+  title        String
+  description  String?
+  type         String
+  status       EventStatus   @default(PENDING)
+  date         DateTime?
+  location     String?
+  image        String?
+  paymentMethods Json?      // stores PaymentMethod[] as JSON
+  theme        Json?   
+  eventLink    String        // custom sharable link
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  
+  // Relations
+  organizer    User          @relation( fields: [organizerId], references: [id])
+  organizerId  Int
+
+  school       School?       @relation(fields: [schoolId], references: [id])
+  schoolId     Int?
+
+  fields       EventField[]
+  receipts     Receipt[]
+  payments     Payment[]
+
+  @@unique([organizerId, eventLink]) // Ensure link uniqueness per organizer
+}
+model Payment {
+  id         Int      @id @default(autoincrement())
+  answers    Json     // Dynamic field responses
+  amount     Float
+  method     PaymentMethod   // MOMO, OrangeMoney, Card
+  status     String   @default("PENDING") // optional, for completed/failed
+  createdAt  DateTime @default(now())
+  // Relations
+  eventId Int
+  event   Event @relation(fields: [eventId], references: [id])
+
+  receipt Receipt?
+}
+// Dynamic Form Fields for Event
+model EventField {
+  id          Int       @id @default(autoincrement())
+  label       String
+  fieldType   FieldType
+  required    Boolean   @default(true)
+  readOnly    Boolean   @default(false)
+  defaultValue String?  
+  options     Json?     // for select, radio, checkbox options as string array
+  min         Int?
+  max         Int?
+  fixedValue  Boolean?  @default(false)
+  conditional Json? 
+  // Relation
+  eventId Int
+  event   Event @relation(fields: [eventId], references: [id])
+}
+model Receipt {
+  id            Int      @id @default(autoincrement())
+  receiptData   Json     // JSON storing selected fields, school info, amounts
+  qrCode        String?  // QR code string / URL
+
+  // Relations
+  eventId       Int
+  event         Event @relation(fields: [eventId], references: [id])
+
+  contributorId Int
+  contributor   User  @relation(fields: [contributorId], references: [id])
+
+  contribution  Payment? @relation(fields: [contributionId], references: [id])
+  contributionId Int? @unique
+  paidAt           DateTime
+
+  // Dynamic fields stored in a structured way
+  customFields  Json // Example: [ { "label": "Student Name", "value": "John Doe" }, ... ]
+
+  // School/Event info at the time of generation (in case it changes later)
+  schoolName    String
+  schoolLogo    String?
+  eventTitle    String
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Relations
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}

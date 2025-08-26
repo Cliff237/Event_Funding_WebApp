@@ -10,7 +10,6 @@ const SignUp = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    gender: '',
     acceptPolicy: false,
   });
   
@@ -97,12 +96,6 @@ const SignUp = () => {
       setCurrentError('Passwords do not match');
       return false;
     }
-    
-    if (!formData.gender) {
-      setCurrentError('Please select your gender'); 
-      return false;
-    }
-    
     if (!formData.acceptPolicy) {
       setCurrentError('You must accept the terms and conditions');
       return false;
@@ -116,6 +109,7 @@ const SignUp = () => {
     e.preventDefault();
     
     if (validateForm()) {
+      
       // Form is valid, proceed with submission
       console.log('Form submitted:', { ...formData, profileImage });
       // Here you would typically send the data to your backend
@@ -148,7 +142,7 @@ const SignUp = () => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden" 
+        className="w-full h-fit max-w-4xl bg-white rounded-xl shadow-lg overflow-hidden" 
       >
         <div className="md:flex">
           {/* Header section - moves to right on desktop */}
@@ -205,7 +199,7 @@ const SignUp = () => {
                 {/* Name Field */}
                 <motion.div variants={itemVariants}>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
+                    Organizer Name
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -218,7 +212,7 @@ const SignUp = () => {
                       value={formData.name}
                       onChange={handleInputChange}
                       className={`pl-10 w-full px-4 py-2 rounded-lg border ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                      placeholder="Cliff Momo"
+                      placeholder="Organizer237"
                     />
                   </div>
                 </motion.div>
@@ -285,42 +279,7 @@ const SignUp = () => {
                     />
                   </div>
                 </motion.div>
-                
-                {/* Gender Field */}
-                <motion.div variants={itemVariants}>
-                  <div className="flex space-x-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Gender
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="male"
-                        checked={formData.gender === 'male'}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                      />
-                      <span className="ml-2 flex items-center text-gray-700">
-                         Male
-                      </span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        name="gender"
-                        value="female"
-                        checked={formData.gender === 'female'}
-                        onChange={handleInputChange}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                      />
-                      <span className="ml-2 flex items-center text-gray-700">
-                         Female
-                      </span>
-                    </label>
-                  </div>
-                </motion.div>
-                
+          
                 {/* Accept Policy Checkbox */}
                 <motion.div variants={itemVariants} className="flex items-start">
                   <div className="flex items-center h-5">

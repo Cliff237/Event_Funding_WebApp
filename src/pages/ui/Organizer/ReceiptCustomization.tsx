@@ -113,7 +113,7 @@ export const ReceiptCustomization = ({
       <div className="mb-6 p-4 border rounded-lg">
         <h3 className="font-medium mb-3 flex items-center">
           <FiInfo className="mr-2" />
-          School Information (for school events)
+          School Information 
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
@@ -145,7 +145,7 @@ export const ReceiptCustomization = ({
           </h3>
           <button
             onClick={() => setIsAddFieldModalOpen(true)}
-            className="flex items-center px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            className="flex items-center px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
           >
             <FiPlus className="mr-1" />
             Add Field

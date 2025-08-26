@@ -36,14 +36,14 @@ export const ReceiptPreview = ({ receiptSettings, receiptData }: ReceiptPreviewP
           <div className="mb-4 space-y-3">
             <div className="flex justify-between">
               <span>Amount:</span>
-              <span className="font-bold">{receiptData.amount}</span>
+              <span className="font-bold">{receiptData.amount} 25,000</span>
             </div>
             <div className="flex justify-between">
               <span>Reference:</span>
               <span>{receiptData.reference}</span>
             </div>
             <div className="flex justify-between">
-              <span>Payer:</span>
+              <span>Name:</span>
               <span>{receiptData.payer}</span>
             </div>
             <div className="flex justify-between">

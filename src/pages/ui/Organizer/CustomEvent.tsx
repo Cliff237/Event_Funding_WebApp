@@ -1,14 +1,13 @@
 import { useRef, useState } from "react";
 import { FiArrowLeft, FiEye,  FiPlusCircle, FiTrash2,  } from "react-icons/fi"
 import { useNavigate } from "react-router-dom";
-
-import EventLinkCardEditor from "../../components/Organizer/Events/EventLinkCardEditor";
 import type { EventConfig, FieldType, FormField, PaymentMethod } from "../../components/Organizer/Events/type";
 import { motion } from "framer-motion";
 import FieldConfigurationPanel from "../../components/Organizer/FieldConfigPanel";
 import ContributorView from "../ContributorView";
 import GlobalConfigPanel from "../../components/Organizer/GlobalConfigPanel";
 import { ChevronsLeftIcon, X } from "lucide-react";
+import { PaymentGetSetup } from "./CustomePay_receipt_page";
 
 
 
@@ -26,13 +25,13 @@ function CustomEvent() {
 
     const [event, setEvent] = useState<EventConfig>({
       id: '',
-      title: '',
+      title: 'Event Contribution',
       description: '',
       category: 'school',
-      subType: 'defense-fees',
+      subType: '',
       fields: [
         {
-          id: 'Custom Field',
+          id: 'custom Field',
           label: 'Custom Field',
           type: 'text',
           required: true,
@@ -121,7 +120,7 @@ function CustomEvent() {
     const deleteField = (fieldId: string) => {
         setEvent(prev => ({
         ...prev,
-        fields: prev.fields.filter(f => f.id !== fieldId)
+        fields: (prev.fields ?? []).filter(f => f.id !== fieldId)
         }));
         setSelectedFieldId(null);
     };
@@ -140,8 +139,12 @@ function CustomEvent() {
         // Theme customization
     const updateTheme = (property: keyof EventConfig['theme'], value: string) => {
         setEvent(prev => ({
-        ...prev,
-        theme: { ...prev.theme, [property]: value }
+            ...prev,
+            theme: {
+                primaryColor: property === 'primaryColor' ? value : prev.theme.primaryColor,
+                secondaryColor: property === 'secondaryColor' ? value : prev.theme.secondaryColor,
+                bgColor: property === 'bgColor' ? value : prev.theme.bgColor
+            }
         }));
     };
   return (
@@ -216,7 +219,7 @@ function CustomEvent() {
                                         className={`space-y-1 mb-4 w-full px-4 py-2 rounded bg-gray-100/10 
                                             ${selectedFieldId === field.id ? 'border-2 border-purple-500 ':'border-l-8  border-purple-800 '}
                                             h-fit`}
-                                        onClick={() => {setSelectedFieldId(field.id); setIsSidebarCollapsed(!isSidebarCollapsed)}}>
+                                        onClick={() => {setSelectedFieldId(field.id); setIsSidebarCollapsed(!isSidebarCollapsed); console.log('click')}}>
                                             <label className="block text-sm font-medium mb-1">
                                                 {field.label}
                                             </label>
@@ -251,6 +254,7 @@ function CustomEvent() {
                         
                         {
                             selectedFieldId ? (
+                          
                                 <div>
                                     {isFieldConfig &&(
                                         <div>
@@ -306,34 +310,76 @@ function CustomEvent() {
                                 </div>
                             ) :  
                             (!previewMode) && (
-
-                                    <div className="mb-6 text-gray-100 border-t-1 ">
-                                        <h4 className="font-medium mb-3 text-gray-100 ">Payment Methods</h4>
+                                    <div className="mb-6 text-gray-100 border-t-1">
+                                        <h4 className="font-medium mb-3 text-gray-100">Payment Methods</h4>
                                         <div className="space-y-3">
-                                            {(['momo','om','bank'] as PaymentMethod[]).map(method => (
-                                                <label key={method} className="flex items-center space-x-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={event.paymentMethods?.includes(method) || false}
-                                                    onChange={() => {
-                                                    togglePaymentMethod(method);
-                                                    if (!event.paymentMethods?.includes(method)) {
-                                                        addPaymentFields(method);
-                                                    }
-                                                    }}
-                                                    className="rounded text-purple-600"
-                                                />
-                                                <span className="flex items-center">
-                                                    {method === 'momo'}
-                                                    {method === 'om'}
-                                                    {method.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                                                </span>
-                                                </label>
-                                            ))}
+                                        {(['momo','om','bank'] as PaymentMethod[]).map(method => (
+                                            <label key={method} className="flex items-center space-x-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={event.paymentMethods?.includes(method) || false}
+                                                onChange={() => {
+                                                togglePaymentMethod(method);
+                                                if (!event.paymentMethods?.includes(method)) {
+                                                    addPaymentFields(method);
+                                                }
+                                                }}
+                                                className="rounded text-purple-600"
+                                            />
+                                            <span className="flex items-center">
+                                                {method === 'momo'}
+                                                {method === 'om'}
+                                                {method.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                            </span>
+                                            </label>
+                                        ))}
+                                        
+                                        {/* ADD THIS CHECKBOX FOR IMAGE UPLOAD */}
+                                        <label className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-400">
+                                            <input
+                                            type="checkbox"
+                                            checked={event.allowImageUpload || false}
+                                            onChange={(e) => {
+                                                setEvent(prev => ({
+                                                ...prev,
+                                                allowImageUpload: e.target.checked
+                                                }));
+                                                if (e.target.checked) {
+                                                // Add image upload field if checked
+                                                if (!event.fields.some(f => f.id === 'contributor-image')) {
+                                                    setEvent(prev => ({
+                                                    ...prev,
+                                                    fields: [
+                                                        ...prev.fields,
+                                                        {
+                                                            id: 'contributor-image',
+                                                            label: 'Upload Your Photo',
+                                                            type: 'file',
+                                                            required: false,
+                                                            readOnly: false,
+                                                            accept: 'image/*'
+                                                        } as unknown as FormField
+                                                    ]
+                                                    }));
+                                                }
+                                                } else {
+                                                // Remove image upload field if unchecked
+                                                setEvent(prev => ({
+                                                    ...prev,
+                                                    fields: prev.fields.filter(f => f.id !== 'contributor-image')
+                                                }));
+                                                }
+                                            }}
+                                            className="rounded text-purple-600"
+                                            />
+                                            <span className="flex items-center text-xl">
+                                            Allow contributors to upload images
+                                            </span>
+                                        </label>
                                         </div>
                                     </div>
-                                    )
-                        }
+                                )
+                               }
                              {
                                 !isFieldConfig &&(
                                     <GlobalConfigPanel
@@ -470,15 +516,8 @@ function CustomEvent() {
                 </>
             )
             :(
-                <EventLinkCardEditor 
-                    event={event}
-                    onSave={(cardData) => {
-                    // Save the card data to your backend
-                    console.log('Saving card:', cardData);
-                    // Then you might navigate to dashboard or show success message
-                    }}
-                    onBack={() => setCreationPhase('building')}
-                />
+                <PaymentGetSetup/>
+               
             )
         }
 

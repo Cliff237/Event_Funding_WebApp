@@ -95,21 +95,71 @@ const ContributorView = ({ event }: { event: EventConfig }) => {
   };
 
  
-   const renderFieldInput = (field: FormField) => {
-     const hasDefaultValue = field.defaultValue !== undefined;
-     const isFixed = hasDefaultValue || field.fixedValue;
-     const value = hasDefaultValue ? field.defaultValue : formData[field.id] || '';
- 
-     const commonProps = {
-       value: value,
-       className: `w-full p-3 border rounded-lg ${isFixed ? 'bg-gray-100 cursor-not-allowed' : ''}`,
-       required: field.required,
-       disabled: field.readOnly,
-       placeholder: field.label,
-       readOnly:field.readOnly,
-     };
- 
-     switch(field.type) {
+  const renderFieldInput = (field: FormField) => {
+  const hasDefaultValue = field.defaultValue !== undefined;
+  const isFixed = hasDefaultValue || field.fixedValue;
+  const value = hasDefaultValue ? field.defaultValue : formData[field.id] || '';
+
+  const commonProps = {
+    value: value,
+    className: `w-full p-3 border rounded-lg ${isFixed ? 'bg-gray-100 cursor-not-allowed' : ''}`,
+    required: field.required,
+    disabled: field.readOnly,
+    placeholder: field.label,
+    readOnly: field.readOnly,
+  };
+
+  switch(field.type) {
+    case 'file': // ADD FILE INPUT CASE
+      return (
+        <div className="space-y-2">
+          <input
+            type="file"
+            accept={field.accept || '*'}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                handleChange(field.id, file);
+                
+                // Preview the image if it's an image file
+                if (file.type.startsWith('image/')) {
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      [`${field.id}-preview`]: e.target?.result
+                    }));
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }
+            }}
+            className="w-full p-2 border rounded-lg"
+          />
+          {formData[`${field.id}-preview`] && (
+            <div className="mt-2">
+              <img 
+                src={formData[`${field.id}-preview`]} 
+                alt="Preview" 
+                className="w-20 h-20 object-cover rounded-lg border"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    [field.id]: null,
+                    [`${field.id}-preview`]: null
+                  }));
+                }}
+                className="mt-1 text-sm text-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+      );
        case 'select':
          return (
            <div className="relative">
@@ -238,12 +288,21 @@ const ContributorView = ({ event }: { event: EventConfig }) => {
                   <div key={field.id} className="mb-6">
                     <label className="block font-medium mb-1">
                       {field.label}
-                  
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
                     </label>
                     {renderFieldInput(field as FormField)}
                     {errors[field.id] && (
                       <p className="text-red-500 text-sm mt-1">{errors[field.id]}</p>
                     )}
+                    
+                    {/* Add image preview for file fields
+                    {field.type === 'file' && formData[field.id] && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-green-600">
+                          ✓ Image ready for upload
+                        </p>
+                      </div>
+                    )} */}
                   </div>
                 ))}
 

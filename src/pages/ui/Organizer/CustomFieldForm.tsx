@@ -32,7 +32,7 @@ export const CustomFieldModal = ({ isOpen, onClose, onAddField }: CustomFieldMod
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/90 bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg max-w-md w-full">
         <h2 className="text-xl font-semibold mb-4">Add Custom Field</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -49,7 +49,7 @@ export const CustomFieldModal = ({ isOpen, onClose, onAddField }: CustomFieldMod
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Default Value (optional)</label>
+            <label className="block text-sm font-medium mb-1">Default Value</label>
             <input
               type="text"
               name="value"
@@ -58,18 +58,6 @@ export const CustomFieldModal = ({ isOpen, onClose, onAddField }: CustomFieldMod
               className="w-full p-2 border rounded"
               placeholder="Will be empty if not provided"
             />
-          </div>
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                name="required"
-                checked={field.required}
-                onChange={handleChange}
-                className="mr-2"
-              />
-              Required field (contributor must fill this)
-            </label>
           </div>
           <div className="flex justify-end space-x-3">
             <button

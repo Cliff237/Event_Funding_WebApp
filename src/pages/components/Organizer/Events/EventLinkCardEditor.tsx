@@ -53,169 +53,167 @@ const EventLinkCardEditor = ({ event, onSave, onBack }: EventLinkCardProps) => {
 
   return (
 
-    <div className="w-full overflow-y-scroll p-3 h-screen text-gray-700 bg-gray-800/30">
-      <div className=" rounded-xl bg-gray-50 shadow-md overflow-hidden">
-        <div className="p-6">
-          {/* Add back button at the top */}
-          <button
-            onClick={onBack}
-            className="mb-4 flex items-center text-purple-600 hover:text-purple-800"
-          >
-            <FiChevronLeft className="mr-1" />
-            Back to editor
-          </button>
+    <div className="fixed inset-0 overflow-y-scroll text-gray-700 bg-black/80 flex items-center justify-center">
+      <div className=" p-4 bg-gray-50 h-fit rounded ">
+        {/* Add back button at the top */}
+        <button
+          onClick={onBack}
+          className="mb-4 flex items-center text-purple-600 hover:text-purple-800"
+        >
+          <FiChevronLeft className="mr-1" />
+          Back to editor
+        </button>
           
-          <h2 className="text-2xl font-bold mb-4">Customize Your Event Link</h2>
-          
-    <div className="w-full mx-auto md:p-6">
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Card Editor */}
-        <div className="space-y-4 border p-4 rounded w-full" >
-          <h3 className="text-lg font-medium">Customize Link Card</h3>
-          
-          <div>
-            <label className="block text-sm font-medium mb-2">Card Image</label>
-            <div className="flex items-center space-x-4">
-              <label className="cursor-pointer">
-                <div className="w-24 h-24 rounded-md bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  {imageUrl ? (
-                    <img src={imageUrl} alt="Event" className="w-full h-full object-cover rounded-md" />
-                  ) : (
-                    <FiImage className="text-gray-400 text-2xl" />
-                  )}
+        <h2 className="text-2xl font-bold mb-4">Customize Your Event Link</h2>
+        
+        <div className="w-full  md:p-2">
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Card Editor */}
+            <div className="space-y-4 border p-4 rounded w-full" >
+              <h3 className="text-lg font-medium">Customize Link Card</h3>
+              
+              <div>
+                <label className="block text-sm font-medium mb-2">Card Image</label>
+                <div className="flex items-center space-x-4">
+                  <label className="cursor-pointer">
+                    <div className="w-24 h-24 rounded-md bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                      {imageUrl ? (
+                        <img src={imageUrl} alt="Event" className="w-full h-full object-cover rounded-md" />
+                      ) : (
+                        <FiImage className="text-gray-400 text-2xl" />
+                      )}
+                    </div>
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-sm text-gray-500">
+                    {imageUrl ? 'Change image' : 'Upload image (Recommended 800x400px)'}
+                  </span>
                 </div>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Card Title</label>
+                <input
+                  type="text"
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  maxLength={60}
                 />
-              </label>
-              <span className="text-sm text-gray-500">
-                {imageUrl ? 'Change image' : 'Upload image (Recommended 800x400px)'}
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Card Title</label>
-            <input
-              type="text"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              maxLength={60}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Card Description</label>
-            <textarea
-              value={customDescription}
-              onChange={(e) => setCustomDescription(e.target.value)}
-              className="w-full p-2 border rounded-md"
-              rows={3}
-              maxLength={160}
-            />
-          </div>
-
-          <button
-            onClick={() => onSave({ imageUrl, title: customTitle, description: customDescription })}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-          >
-            Save Card Design
-          </button>
-        </div>
-
-        {/* Preview */}
-        <div className="space-y-4 md:w-2/3">
-          <h3 className="text-lg font-medium">Preview</h3>
-          <div className="border rounded-lg overflow-hidden shadow-sm">
-            {imageUrl ? (
-              <img src={imageUrl} alt="Event" className="w-full h-40 object-cover" />
-            ) : (
-              <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
-                <FiImage className="text-gray-400 text-4xl" />
               </div>
-            )}
-            <div className="p-4">
-              <h4 className="font-bold text-lg mb-1">{customTitle}</h4>
-              <p className="text-gray-600 text-sm mb-3 line-clamp-2">{customDescription}</p>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-500">event.example.com</span>
-                <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                  {event.category}
-                </span>
-              </div>
-            </div>
-          </div>
 
-          {/* Link Sharing */}
-          <div className="mt-6">
-            <h3 className="text-lg font-medium mb-3">Share Event Link Card</h3>
-            <div className="flex items-center space-x-3">
+              <div>
+                <label className="block text-sm font-medium mb-2">Card Description</label>
+                <textarea
+                  value={customDescription}
+                  onChange={(e) => setCustomDescription(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  rows={3}
+                  maxLength={160}
+                />
+              </div>
+
               <button
-                onClick={copyToClipboard}
-                className="flex items-center px-3 py-2 border rounded-md hover:bg-gray-50"
+                onClick={() => onSave({ imageUrl, title: customTitle, description: customDescription })}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
               >
-                {isCopied ? (
-                  <>
-                    <FiCheck className="mr-2 text-green-500" /> Copied!
-                  </>
+                Save Card Design
+              </button>
+            </div>
+
+            {/* Preview */}
+            <div className="space-y-4 md:w-2/3">
+              <h3 className="text-lg font-medium">Preview</h3>
+              <div className="border rounded-lg overflow-hidden shadow-sm">
+                {imageUrl ? (
+                  <img src={imageUrl} alt="Event" className="w-full h-40 object-cover" />
                 ) : (
-                  <>
-                    <FiCopy className="mr-2" /> Copy Link
-                  </>
+                  <div className="w-full h-40 bg-gray-100 flex items-center justify-center">
+                    <FiImage className="text-gray-400 text-4xl" />
+                  </div>
                 )}
-              </button>
-              <button
-                onClick={shareEvent}
-                className="flex items-center px-3 py-2 border rounded-md hover:bg-gray-50"
-              >
-                <FiShare2 className="mr-2" /> Share Link card
-              </button>
-            </div>
-
-            {showShareOptions && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <a
-                  href={`mailto:?subject=${encodeURIComponent(customTitle)}&body=${encodeURIComponent(`${customDescription}\n\n${eventLink}`)}`}
-                  className="p-2 border rounded-md text-center hover:bg-gray-50"
-                >
-                  Email
-                </a>
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`${customTitle}\n${customDescription}\n${eventLink}`)}`}
-                  className="p-2 border rounded-md text-center hover:bg-gray-50"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  WhatsApp
-                </a>
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${customTitle}\n${eventLink}`)}`}
-                  className="p-2 border rounded-md text-center hover:bg-gray-50"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Twitter
-                </a>
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventLink)}`}
-                  className="p-2 border rounded-md text-center hover:bg-gray-50"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Facebook
-                </a>
+                <div className="p-4">
+                  <h4 className="font-bold text-lg mb-1">{customTitle}</h4>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{customDescription}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">event.example.com</span>
+                    <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                      {event.category}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Link Sharing */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-3">Share Event Link Card</h3>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={copyToClipboard}
+                    className="flex items-center px-3 py-2 border rounded-md hover:bg-gray-50"
+                  >
+                    {isCopied ? (
+                      <>
+                        <FiCheck className="mr-2 text-green-500" /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <FiCopy className="mr-2" /> Copy Link
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={shareEvent}
+                    className="flex items-center px-3 py-2 border rounded-md hover:bg-gray-50"
+                  >
+                    <FiShare2 className="mr-2" /> Share Link card
+                  </button>
+                </div>
+
+                {showShareOptions && (
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent(customTitle)}&body=${encodeURIComponent(`${customDescription}\n\n${eventLink}`)}`}
+                      className="p-2 border rounded-md text-center hover:bg-gray-50"
+                    >
+                      Email
+                    </a>
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(`${customTitle}\n${customDescription}\n${eventLink}`)}`}
+                      className="p-2 border rounded-md text-center hover:bg-gray-50"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      WhatsApp
+                    </a>
+                    <a
+                      href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${customTitle}\n${eventLink}`)}`}
+                      className="p-2 border rounded-md text-center hover:bg-gray-50"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Twitter
+                    </a>
+                    <a
+                      href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventLink)}`}
+                      className="p-2 border rounded-md text-center hover:bg-gray-50"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Facebook
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-          {/* ... rest of your existing JSX ... */}
-        </div>
+  
       </div>
     </div>
   );

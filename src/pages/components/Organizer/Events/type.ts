@@ -1,8 +1,9 @@
 // src/components/EventBuilder/types.ts
-export type FieldType = 'text' | 'number' | 'select' | 'radio' | 'checkbox' | 'email' | 'tel';
+export type FieldType = 'text' | 'number' | 'select' | 'radio' | 'checkbox' | 'email' | 'tel' | 'file';
 export type PaymentMethod = 'momo' | 'om' | 'bank';
 export type PaymentGetMethod = 'wallet' | 'momo' | 'om' | 'bank';
 export interface FormField {
+  accept?: string;
   id: string;
   label: string;
   type: FieldType;
@@ -24,9 +25,10 @@ export interface EventConfig {
   title: string;
   description: string;
   category: 'wedding' | 'school';
-  subType: string;
+  subType?: string;
   fields: FormField[];
   paymentMethods?: PaymentMethod[];
+  allowImageUpload?: boolean;
   theme: {
     primaryColor: string;
     secondaryColor: string;

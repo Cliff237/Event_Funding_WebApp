@@ -2,15 +2,15 @@
 import './App.css'
 import {RouterProvider } from 'react-router-dom';
 import router from './routes';
-import EventBuilder from './pages/ui/Organizer/EventBuilder';
 import { PaymentGetSetup } from './pages/ui/Organizer/CustomePay_receipt_page';
 import OverviewPage from './pages/ui/file';
+import CustomEvent from './pages/ui/Organizer/CustomEvent';
 
 function App() {
-    // return <OverviewPage/>
-return <PaymentGetSetup/>
- return <RouterProvider router={router}/>;
-return <EventBuilder/>
+    return <RouterProvider router={router}/>;
+    return <PaymentGetSetup/>
+    return <CustomEvent/>
+    return <OverviewPage/>
 
 }
 
