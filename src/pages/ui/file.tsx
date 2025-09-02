@@ -1,441 +1,661 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { 
-  FiDollarSign, FiSmartphone, FiPhone, 
-  FiCreditCard, FiCalendar, FiDownload,
-  FiUser, FiBell, FiSearch, FiBarChart2,
-  FiTrendingUp, FiClock, FiPieChart, FiActivity
-} from 'react-icons/fi';
+  Plus, 
+  Calendar, 
+  Users, 
+  DollarSign, 
+  TrendingUp,
+  Clock,
+  Lock,
+  Unlock,
+  Eye,
+  Settings,
+  Edit,
+  Share2,
+  BarChart3,
+  Target,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Search,
+  MoreHorizontal,
+  Copy,
+  Download,
+  Pause,
+  Play,
+  Trash2,
+  Star
+} from 'lucide-react';
 
-// Types (expanded from previous)
-type Transaction = {
-  id: string;
-  amount: number;
-  date: string;
-  payer: string;
-  method: 'wallet' | 'momo' | 'om' | 'bank';
-  status: 'completed' | 'pending' | 'failed';
-};
-
-type Notification = {
+interface Event {
   id: string;
   title: string;
-  message: string;
-  time: string;
-  read: boolean;
-};
-type PaymentSource = {
-  id: string;
-  type: 'wallet' | 'momo' | 'om' | 'bank';
-  balance: number;
-  status: 'active' | 'needs_verification';
-};
-// PaymentSources Component
-type PaymentSourcesProps = {
-  sources: PaymentSource[];
-};
+  description: string;
+  category: 'wedding' | 'school' | 'funeral' | 'birthday';
+  status: 'active' | 'completed' | 'cancelled' | 'locked' | 'paused';
+  targetAmount?: number;
+  currentAmount: number;
+  contributorCount: number;
+  createdDate: string;
+  deadline: string;
+  duration: number; // in days
+  isLocked: boolean;
+  progress: number;
+  totalTransactions: number;
+  avgContribution: number;
+  lastActivity: string;
+  completionRate: number;
+  featuredContributors: string[];
+}
 
-const PaymentSources = ({ sources }: PaymentSourcesProps) => (
-  <div className="overflow-x-auto">
-    <table className="min-w-full bg-white rounded-lg shadow">
-      <thead>
-        <tr>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Balance</th>
-          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sources.map(source => (
-          <tr key={source.id} className="border-b last:border-b-0">
-            <td className="px-4 py-2 capitalize">{source.type === 'momo' ? 'Mobile Money' : source.type}</td>
-            <td className="px-4 py-2">XAF {source.balance.toLocaleString()}</td>
-            <td className="px-4 py-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${source.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{source.status}</span>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
+interface EventStats {
+  totalRevenue: number;
+  conversionRate: number;
+  dailyContributions: number[];
+  paymentMethodBreakdown: {
+    momo: number;
+    om: number;
+    bank: number;
+    wallet: number;
+  };
+}
 
-// EventFilter Component
-type EventFilterProps = {
-  onFilterChange: (filter: string) => void;
-};
+const MyEventsPage: React.FC = () => {
+  const [events, setEvents] = useState<Event[]>([
+    {
+      id: '1',
+      title: 'AICS School Fees 2024',
+      description: 'Collect school fees for academic year 2024-2025',
+      category: 'school',
+      status: 'active',
+      targetAmount: 5000000,
+      currentAmount: 2500000,
+      contributorCount: 45,
+      createdDate: '2024-01-01',
+      deadline: '2024-03-31',
+      duration: 90,
+      isLocked: false,
+      progress: 50,
+      totalTransactions: 78,
+      avgContribution: 55555,
+      lastActivity: '2024-01-15T10:30:00Z',
+      completionRate: 85.2,
+      featuredContributors: ['Alice J.', 'Bob W.', 'Carol B.']
+    },
+    {
+      id: '2',
+      title: 'Marie & Paul Wedding',
+      description: 'Help us celebrate our special day',
+      category: 'wedding',
+      status: 'active',
+      targetAmount: 1000000,
+      currentAmount: 850000,
+      contributorCount: 32,
+      createdDate: '2023-12-15',
+      deadline: '2024-02-14',
+      duration: 60,
+      isLocked: false,
+      progress: 85,
+      totalTransactions: 45,
+      avgContribution: 26562,
+      lastActivity: '2024-01-14T14:20:00Z',
+      completionRate: 91.4,
+      featuredContributors: ['David L.', 'Emma M.', 'Frank T.']
+    },
+    {
+      id: '3',
+      title: 'Papa Joseph Memorial',
+      description: 'Memorial service contributions',
+      category: 'funeral',
+      status: 'completed',
+      currentAmount: 1200000,
+      contributorCount: 67,
+      createdDate: '2023-11-20',
+      deadline: '2023-12-20',
+      duration: 30,
+      isLocked: true,
+      progress: 100,
+      totalTransactions: 89,
+      avgContribution: 17910,
+      lastActivity: '2023-12-19T16:45:00Z',
+      completionRate: 100,
+      featuredContributors: ['Grace H.', 'Henry K.', 'Ivy N.']
+    },
+    {
+      id: '4',
+      title: 'Emma\'s Sweet 16',
+      description: 'Birthday celebration fund',
+      category: 'birthday',
+      status: 'paused',
+      targetAmount: 600000,
+      currentAmount: 450000,
+      contributorCount: 28,
+      createdDate: '2024-01-05',
+      deadline: '2024-02-28',
+      duration: 54,
+      isLocked: false,
+      progress: 75,
+      totalTransactions: 35,
+      avgContribution: 16071,
+      lastActivity: '2024-01-12T09:15:00Z',
+      completionRate: 68.8,
+      featuredContributors: ['Jack R.', 'Kate S.', 'Leo P.']
+    }
+  ]);
 
-const EventFilter = ({ onFilterChange }: EventFilterProps) => (
-  <div className="flex gap-2 mb-2">
-    <button onClick={() => onFilterChange('all')} className="px-3 py-1 text-sm border rounded">All</button>
-    <button onClick={() => onFilterChange('school')} className="px-3 py-1 text-sm border rounded">School</button>
-    <button onClick={() => onFilterChange('donation')} className="px-3 py-1 text-sm border rounded">Donation</button>
-    <button onClick={() => onFilterChange('event')} className="px-3 py-1 text-sm border rounded">Event</button>
-  </div>
-);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-// EventBalanceCard Component
-type EventBalanceCardProps = {
-  event: EventBalance;
-};
-
-const EventBalanceCard = ({ event }: EventBalanceCardProps) => (
-  <div className="bg-gray-50 border rounded-lg p-4 shadow-sm">
-    <div className="flex justify-between items-center mb-2">
-      <span className="font-semibold text-gray-800">{event.name}</span>
-      <span className="text-xs text-gray-500">{event.date}</span>
-    </div>
-    <div className="text-lg font-bold text-blue-700 mb-1">XAF {event.total.toLocaleString()}</div>
-    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
-      {Object.entries(event.allocations).map(([type, amount]) => (
-        <span key={type} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-          {type === 'momo' ? 'Mobile Money' : type}: XAF {amount.toLocaleString()}
-        </span>
-      ))}
-    </div>
-  </div>
-);
-
-type EventBalance = {
-  id: string;
-  name: string;
-  date: string;
-  type: 'school' | 'donation' | 'event';
-  total: number;
-  allocations: Record<string, number>; // e.g., { wallet: 800, momo: 440 }
-};
-
-
-// Mock Data (expanded)
-const useDashboardData = () => {
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    avatar: '',
-    lastLogin: 'Today at 09:42 AM',
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+      minimumFractionDigits: 0
+    }).format(amount);
   };
 
-  const paymentSources: PaymentSource[] = [
-    { id: '1', type: 'wallet', balance: 2150.00, status: 'active' },
-    { id: '2', type: 'momo', balance: 1200.50, status: 'active' },
-    { id: '3', type: 'om', balance: 890.00, status: 'needs_verification' },
-    { id: '4', type: 'bank', balance: 580.00, status: 'active' },
-  ];
-
-  const events: EventBalance[] = [
-    { id: 'e1', name: 'School Defense Fees', date: '2023-06-15', type: 'school', total: 1240.00, allocations: { wallet: 800, momo: 440 } },
-    { id: 'e2', name: 'Alumni Donations', date: '2023-06-10', type: 'donation', total: 3580.50, allocations: { wallet: 1350, bank: 2230.50 } },
-    { id: 'e3', name: 'Graduation Ceremony', date: '2023-05-28', type: 'school', total: 1820.00, allocations: { wallet: 600, momo: 1220 } },
-  ];
-
-  const recentTransactions: Transaction[] = [
-    { id: 't1', amount: 150, date: '2023-06-15', payer: 'Alice Johnson', method: 'momo', status: 'completed' },
-    { id: 't2', amount: 250, date: '2023-06-14', payer: 'Bob Smith', method: 'bank', status: 'pending' },
-    { id: 't3', amount: 75, date: '2023-06-14', payer: 'Charlie Brown', method: 'wallet', status: 'completed' },
-    { id: 't4', amount: 300, date: '2023-06-13', payer: 'Dana White', method: 'om', status: 'failed' },
-  ];
-
-  const notifications: Notification[] = [
-    { id: 'n1', title: 'New Payment', message: 'Received XAF 25,000 from Samuel Eto\'o', time: '2 hours ago', read: false },
-    { id: 'n2', title: 'Withdrawal Processed', message: 'XAF 50,000 sent to your bank account', time: '1 day ago', read: true },
-    { id: 'n3', title: 'Account Verification', message: 'Your OM account needs verification', time: '2 days ago', read: true },
-  ];
-
-  const analytics = {
-    totalBalance: paymentSources.reduce((sum, source) => sum + source.balance, 0),
-    monthlyGrowth: 12,
-    activeEvents: events.length,
-    pendingTransactions: recentTransactions.filter(t => t.status === 'pending').length,
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
-  return { user, analytics, paymentSources, events, recentTransactions, notifications };
-};
-
-// New Components
-const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
-  const statusColors = {
-    completed: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    failed: 'bg-red-100 text-red-800'
+  const getDaysRemaining = (deadline: string) => {
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const diffTime = deadlineDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
-  return (
-    <div className="flex justify-between items-center p-3 hover:bg-gray-50 rounded-lg">
-      <div className="flex items-center">
-        <div className={`p-2 rounded-full mr-3 ${
-          transaction.method === 'wallet' ? 'bg-green-100 text-green-600' :
-          transaction.method === 'momo' ? 'bg-purple-100 text-purple-600' :
-          transaction.method === 'om' ? 'bg-blue-100 text-blue-600' :
-          'bg-yellow-100 text-yellow-600'
-        }`}>
-          {transaction.method === 'wallet' && <FiDollarSign />}
-          {transaction.method === 'momo' && <FiSmartphone />}
-          {transaction.method === 'om' && <FiPhone />}
-          {transaction.method === 'bank' && <FiCreditCard />}
-        </div>
-        <div>
-          <p className="font-medium">{transaction.payer}</p>
-          <p className="text-sm text-gray-500">{transaction.date}</p>
-        </div>
-      </div>
-      <div className="text-right">
-        <p className="font-medium">XAF {transaction.amount.toLocaleString()}</p>
-        <span className={`text-xs px-2 py-1 rounded-full ${statusColors[transaction.status]}`}>
-          {transaction.status}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-const NotificationItem = ({ notification }: { notification: Notification }) => (
-  <div className={`p-3 border-b ${!notification.read ? 'bg-blue-50' : ''}`}>
-    <div className="flex justify-between">
-      <p className="font-medium">{notification.title}</p>
-      <p className="text-xs text-gray-500">{notification.time}</p>
-    </div>
-    <p className="text-sm mt-1">{notification.message}</p>
-  </div>
-);
-
-const AnalyticsChart = () => (
-  <div className="bg-white p-4 rounded-lg h-full">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="font-medium">Payment Trends</h3>
-      <select className="text-sm border rounded px-2 py-1">
-        <option>Last 7 days</option>
-        <option>Last 30 days</option>
-        <option>Last 90 days</option>
-      </select>
-    </div>
-    <div className="bg-gray-100 rounded-lg h-48 flex items-center justify-center">
-      <FiActivity className="text-gray-400 text-4xl" />
-      <p className="text-gray-500 ml-2">Chart visualization</p>
-    </div>
-  </div>
-);
-
-// StatsCard Component
-type StatsCardProps = {
-  title: string;
-  value: string;
-  change?: string;
-  icon?: React.ReactNode;
-};
-
-const StatsCard = ({ title, value, change, icon }: StatsCardProps) => (
-  <div className="bg-white rounded-lg shadow p-4 flex flex-col gap-2 h-full">
-    <div className="flex items-center gap-3">
-      {icon && <div className="bg-gray-100 p-2 rounded-full text-blue-600">{icon}</div>}
-      <span className="text-gray-500 text-xs font-medium">{title}</span>
-    </div>
-    <div className="flex items-end justify-between mt-2">
-      <span className="text-2xl font-bold text-gray-900">{value}</span>
-      {change && (
-        <span className="text-xs text-green-600 font-medium ml-2">{change}</span>
-      )}
-    </div>
-  </div>
-);
-
-// Updated Main Component
-export default function OverviewPage() {
-  const { user, analytics, paymentSources, events, recentTransactions, notifications } = useDashboardData();
-  const [activeTab, setActiveTab] = useState<'sources' | 'events'>('sources');
-  const [filteredEvents, setFilteredEvents] = useState<EventBalance[]>(events);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  const handleFilterChange = (filter: string) => {
-    setFilteredEvents(filter === 'all' ? events : events.filter(event => event.type === filter));
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'school':
+        return 'from-blue-500 to-indigo-600';
+      case 'wedding':
+        return 'from-pink-500 to-rose-600';
+      case 'funeral':
+        return 'from-gray-500 to-slate-600';
+      case 'birthday':
+        return 'from-yellow-500 to-orange-600';
+      default:
+        return 'from-purple-500 to-purple-600';
+    }
   };
 
-  return (
-    <div className="bg-gray-50 min-h-screen">
-      <header className="sticky top-0 z-10 bg-white border-b">
-        <div className="flex justify-between items-center p-4">
-          <div className="flex items-center">
-            <div className="bg-blue-100 text-blue-600 rounded-full p-2 mr-3">
-              <FiUser size={20} />
-            </div>
-            <div>
-              <h1 className="font-medium">{user.name}</h1>
-              <p className="text-sm text-gray-500">{user.email}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border rounded-lg text-sm w-64"
-              />
-            </div>
-            
-            <div className="relative">
-              <button 
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="text-gray-500 hover:text-gray-700 relative"
-              >
-                <FiBell size={20} />
-                {notifications.some(n => !n.read) && (
-                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500"></span>
-                )}
-              </button>
-              
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border z-20">
-                  <div className="p-3 border-b">
-                    <h3 className="font-medium">Notifications</h3>
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifications.map(notification => (
-                      <NotificationItem key={notification.id} notification={notification} />
-                    ))}
-                  </div>
-                  <div className="p-3 text-center border-t">
-                    <button className="text-blue-600 text-sm">View All</button>
-                  </div>
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'school': return '🎓';
+      case 'wedding': return '💍';
+      case 'funeral': return '🕊️';
+      case 'birthday': return '🎂';
+      default: return '📅';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600 bg-green-100 border-green-200';
+      case 'completed': return 'text-blue-600 bg-blue-100 border-blue-200';
+      case 'locked': return 'text-orange-600 bg-orange-100 border-orange-200';
+      case 'cancelled': return 'text-red-600 bg-red-100 border-red-200';
+      case 'paused': return 'text-yellow-600 bg-yellow-100 border-yellow-200';
+      default: return 'text-gray-600 bg-gray-100 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'active': return <CheckCircle className="w-4 h-4" />;
+      case 'completed': return <Star className="w-4 h-4" />;
+      case 'locked': return <Lock className="w-4 h-4" />;
+      case 'cancelled': return <XCircle className="w-4 h-4" />;
+      case 'paused': return <Pause className="w-4 h-4" />;
+      default: return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
+  const toggleEventLock = (eventId: string) => {
+    setEvents(events.map(event => 
+      event.id === eventId 
+        ? { ...event, isLocked: !event.isLocked, status: event.isLocked ? 'active' : 'locked' }
+        : event
+    ));
+  };
+
+  const filteredEvents = events.filter(event => {
+    const matchesStatus = filterStatus === 'all' || event.status === filterStatus;
+    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         event.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
+  const EventStatsModal = ({ event, onClose }: { event: Event; onClose: () => void }) => {
+    const mockStats: EventStats = {
+      totalRevenue: event.currentAmount,
+      conversionRate: 73.2,
+      dailyContributions: [12000, 25000, 18000, 45000, 32000, 28000, 35000],
+      paymentMethodBreakdown: {
+        momo: 45,
+        om: 30,
+        bank: 15,
+        wallet: 10
+      }
+    };
+
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">{event.title} Statistics</h2>
+                  <p className="text-gray-600">Detailed analytics and performance metrics</p>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatsCard 
-              title="Total Balance" 
-              value={`XAF ${analytics.totalBalance.toLocaleString()}`} 
-              change={`↑ ${analytics.monthlyGrowth}% this month`} 
-              icon={<FiDollarSign size={20} />} 
-            />
-            <StatsCard 
-              title="Active Events" 
-              value={analytics.activeEvents.toString()} 
-              change="3 ongoing" 
-              icon={<FiCalendar size={20} />} 
-            />
-            <StatsCard 
-              title="Pending Transactions" 
-              value={analytics.pendingTransactions.toString()} 
-              change="Needs attention" 
-              icon={<FiClock size={20} />} 
-            />
-            <StatsCard 
-              title="Wallet Balance" 
-              value={`XAF ${paymentSources.find(s => s.type === 'wallet')?.balance.toLocaleString() || '0'}`} 
-              change="↑ 8% from last week" 
-              icon={<FiCreditCard size={20} />} 
-            />
-          </div>
-
-          {/* Financial Overview */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Financial Overview</h2>
-              <div className="flex space-x-2">
-                <button className="px-3 py-1 text-sm border rounded">Export</button>
-                <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded">New Event</button>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
               </div>
             </div>
 
-            <div className="flex border-b mb-4">
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'sources' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-                onClick={() => setActiveTab('sources')}
-              >
-                Payment Sources
-              </button>
-              <button
-                className={`px-4 py-2 font-medium ${activeTab === 'events' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500'}`}
-                onClick={() => setActiveTab('events')}
-              >
-                Event Balances
-              </button>
-            </div>
-            
-            {activeTab === 'sources' ? (
-              <PaymentSources sources={paymentSources} />
-            ) : (
-              <div>
-                <EventFilter onFilterChange={handleFilterChange} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  {filteredEvents.map(event => (
-                    <EventBalanceCard key={event.id} event={event} />
+            <div className="p-6 space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-4 rounded-xl border border-green-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <DollarSign className="w-8 h-8 text-green-600" />
+                    <span className="text-xs font-medium text-green-600 bg-green-200 px-2 py-1 rounded-full">
+                      +12.3%
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-900">{formatAmount(mockStats.totalRevenue)}</p>
+                  <p className="text-sm text-green-700">Total Revenue</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-100 p-4 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <Users className="w-8 h-8 text-blue-600" />
+                    <span className="text-xs font-medium text-blue-600 bg-blue-200 px-2 py-1 rounded-full">
+                      +8.1%
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-900">{event.contributorCount}</p>
+                  <p className="text-sm text-blue-700">Contributors</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-50 to-indigo-100 p-4 rounded-xl border border-purple-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <Target className="w-8 h-8 text-purple-600" />
+                    <span className="text-xs font-medium text-purple-600 bg-purple-200 px-2 py-1 rounded-full">
+                      {mockStats.conversionRate}%
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-900">{event.progress}%</p>
+                  <p className="text-sm text-purple-700">Goal Progress</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-orange-50 to-red-100 p-4 rounded-xl border border-orange-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <BarChart3 className="w-8 h-8 text-orange-600" />
+                    <span className="text-xs font-medium text-orange-600 bg-orange-200 px-2 py-1 rounded-full">
+                      Avg
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-orange-900">{formatAmount(event.avgContribution)}</p>
+                  <p className="text-sm text-orange-700">Avg Contribution</p>
+                </div>
+              </div>
+
+              {/* Payment Methods Breakdown */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods Distribution</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {Object.entries(mockStats.paymentMethodBreakdown).map(([method, percentage]) => (
+                    <div key={method} className="text-center">
+                      <div className="relative w-16 h-16 mx-auto mb-2">
+                        <svg className="w-16 h-16 transform -rotate-90">
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="#e5e7eb"
+                            strokeWidth="8"
+                            fill="transparent"
+                          />
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke={method === 'momo' ? '#f59e0b' : method === 'om' ? '#ea580c' : method === 'bank' ? '#3b82f6' : '#8b5cf6'}
+                            strokeWidth="8"
+                            fill="transparent"
+                            strokeDasharray={`${percentage * 1.76} 176`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-lg font-bold text-gray-900">{percentage}%</span>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-gray-700 capitalize">{method}</p>
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Recent Transactions */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">Recent Transactions</h2>
-              <button className="text-blue-600 text-sm">View All</button>
-            </div>
-            <div className="divide-y">
-              {recentTransactions.map(transaction => (
-                <TransactionItem key={transaction.id} transaction={transaction} />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Analytics Chart */}
-          <AnalyticsChart />
-
-          {/* Payment Method Distribution */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-medium">Payment Methods</h3>
-              <FiPieChart className="text-gray-500" />
-            </div>
-            <div className="bg-gray-100 rounded-lg h-48 flex items-center justify-center">
-              <FiPieChart className="text-gray-400 text-4xl" />
-              <p className="text-gray-500 ml-2">Payment methods chart</p>
-            </div>
-            <div className="mt-4 space-y-2">
-              {paymentSources.map(source => (
-                <div key={source.id} className="flex justify-between text-sm">
-                  <span className="capitalize">{source.type === 'momo' ? 'Mobile Money' : source.type}</span>
-                  <span>XAF {source.balance.toLocaleString()}</span>
+              {/* Recent Activity */}
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                <div className="space-y-3">
+                  {event.featuredContributors.map((contributor, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          {contributor.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{contributor}</p>
+                          <p className="text-sm text-gray-600">Contributed {formatAmount(Math.random() * 100000 + 10000)}</p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-gray-500">{index + 1} min ago</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </div>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+    );
+  };
 
-          {/* Quick Actions */}
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="font-medium mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50">
-                <FiDownload className="text-blue-600 mb-2" />
-                <span className="text-sm">Export Data</span>
-              </button>
-              <button className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50">
-                <FiTrendingUp className="text-green-600 mb-2" />
-                <span className="text-sm">View Reports</span>
-              </button>
-              <button className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50">
-                <FiBarChart2 className="text-purple-600 mb-2" />
-                <span className="text-sm">Analytics</span>
-              </button>
-              <button className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50">
-                <FiUser className="text-yellow-600 mb-2" />
-                <span className="text-sm">Profile</span>
-              </button>
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  }satisfies Variants;
+
+  const cardVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100
+      }
+    },
+    hover: {
+      y: -5,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 10
+      }
+    }
+  }satisfies Variants;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-100">
+      <motion.div 
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div 
+          className="flex flex-col md:flex-row md:items-center justify-between mb-8 space-y-4 md:space-y-0"
+          variants={cardVariants}
+        >
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-900 bg-clip-text text-transparent">
+              My Events
+            </h1>
+            <p className="text-gray-600 mt-2">Manage and monitor your event campaigns</p>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Create New Event
+          </motion.button>
+        </motion.div>
+
+        {/* Filters and Search */}
+        <motion.div 
+          className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 p-6 mb-8"
+          variants={cardVariants}
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex flex-1 items-center space-x-4">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/70"
+                />
+              </div>
+              
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/70"
+              >
+                <option value="all">All Events</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="paused">Paused</option>
+                <option value="locked">Locked</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+
+        {/* Events Grid */}
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+          variants={containerVariants}
+        >
+          <AnimatePresence>
+            {filteredEvents.map((event, index) => (
+              <motion.div
+                key={event.id}
+                variants={cardVariants}
+                whileHover="hover"
+                layout
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50 overflow-hidden hover:shadow-xl transition-all duration-300"
+              >
+                {/* Event Header */}
+                <div className={`h-2 bg-gradient-to-r ${getCategoryColor(event.category)}`} />
+                
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="text-3xl">{getCategoryEmoji(event.category)}</div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 truncate">{event.title}</h3>
+                        <p className="text-sm text-gray-600 truncate">{event.description}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="relative">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <MoreHorizontal className="w-5 h-5 text-gray-600" />
+                      </motion.button>
+                    </div>
+                  </div>
+
+                  {/* Status and Lock */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(event.status)}`}>
+                      {getStatusIcon(event.status)}
+                      <span>{event.status.charAt(0).toUpperCase() + event.status.slice(1)}</span>
+                    </div>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => toggleEventLock(event.id)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        event.isLocked 
+                          ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' 
+                          : 'bg-green-100 text-green-600 hover:bg-green-200'
+                      }`}
+                    >
+                      {event.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                    </motion.button>
+                  </div>
+
+                  {/* Progress Bar */}
+                  {event.targetAmount && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                        <span>Progress</span>
+                        <span>{event.progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <motion.div
+                          className={`h-3 rounded-full bg-gradient-to-r ${getCategoryColor(event.category)}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${event.progress}%` }}
+                          transition={{ duration: 1, delay: index * 0.1 }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="text-gray-600">{formatAmount(event.currentAmount)}</span>
+                        <span className="text-gray-600">of {formatAmount(event.targetAmount || 0)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Event Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-lg font-bold text-gray-900">{event.contributorCount}</p>
+                      <p className="text-xs text-gray-600">Contributors</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="text-lg font-bold text-gray-900">{getDaysRemaining(event.deadline)}</p>
+                      <p className="text-xs text-gray-600">Days Left</p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setShowStatsModal(true);
+                      }}
+                      className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-lg text-sm font-medium hover:shadow-lg transition-all duration-200"
+                    >
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Stats
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      <Eye className="w-4 h-4 text-gray-600" />
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      <Share2 className="w-4 h-4 text-gray-600" />
+                    </motion.button>
+                    
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-gray-600" />
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Empty State */}
+        {filteredEvents.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16"
+          >
+            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-indigo-200 rounded-full flex items-center justify-center">
+              <Calendar className="w-12 h-12 text-purple-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No events found</h3>
+            <p className="text-gray-600 mb-6">Create your first event to start collecting contributions</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-xl shadow-lg font-medium"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Create Event
+            </motion.button>
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* Stats Modal */}
+      {showStatsModal && selectedEvent && (
+        <EventStatsModal 
+          event={selectedEvent} 
+          onClose={() => {
+            setShowStatsModal(false);
+            setSelectedEvent(null);
+          }} 
+        />
+      )}
     </div>
   );
-}
+};
+
+export default MyEventsPage;

@@ -1,7 +1,9 @@
 // src/components/EventBuilder/types.ts
 export type FieldType = 'text' | 'number' | 'select' | 'radio' | 'checkbox' | 'email' | 'tel' | 'file';
 export type PaymentMethod = 'momo' | 'om' | 'bank';
+export type TransactionStatus = 'success' | 'pending' | 'failed';
 export type PaymentGetMethod = 'wallet' | 'momo' | 'om' | 'bank';
+
 export interface FormField {
   accept?: string;
   id: string;
@@ -37,6 +39,39 @@ export interface EventConfig {
 }
 
 
+export interface Transaction {
+  id: string;
+  transactionId: string;
+  eventId: string;
+  eventName: string;
+  eventType: string;
+  amount: number;
+  date: string;
+  payerName: string;
+  payerEmail?: string;
+  payerPhone?: string;
+  status: TransactionStatus;
+  paymentMethod: PaymentMethod;
+  customFields: Record<string, any>; // Dynamic fields based on event
+  metadata?: {
+    fee?: number;
+    netAmount?: number;
+    processedAt?: string;
+  };
+}
+
+export interface Event {
+  id: string;
+  name: string;
+  // type: string;
+  category: 'wedding' | 'school' | 'funeral' | 'birthday';
+  customFields:Array<{
+    id: string;
+    label: string;
+    type: string;
+    visible: boolean;
+  }>;
+}
 
 export interface AccountDetails {
   momoNumber: string;
@@ -81,4 +116,38 @@ export interface ReceiptData {
   reference: string;
   payer: string;
   details: string;
+}
+
+// overview Page 
+export interface EventWallet {
+  id: string;
+  eventName: string;
+  category: 'wedding' | 'school' | 'funeral' | 'birthday';
+  balance: number;
+  targetAmount?: number;
+  totalContributions: number;
+  lastActivity: string;
+  status: 'active' | 'completed' | 'locked' | 'cancelled';
+  progress: number;
+  contributorCount: number;
+}
+
+export interface PlatformStats {
+  totalEvents: number;
+  activeEvents: number;
+  totalRevenue: number;
+  monthlyGrowth: number;
+  totalUsers: number;
+  successRate: number;
+  avgContribution: number;
+  totalTransactions: number;
+}
+
+export interface QuickStats {
+  label: string;
+  value: string;
+  change: number;
+  icon: React.ReactNode;
+  color: string;
+  bgGradient: string;
 }

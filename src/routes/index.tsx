@@ -7,6 +7,11 @@ import LogIn from "../pages/components/public/LogIn";
 import AdminDashbboardLayout from "../pages/components/Organizer/adminDashbboardLayout";
 import CreateEvent from "../pages/ui/Organizer/CreateEvent";
 import CustomEvent from "../pages/ui/Organizer/CustomEvent";
+import TransactionsPages from "../pages/ui/file";
+import TransactionsPage from "../pages/ui/Organizer/Transactionspage";
+import OverviewPage from "../pages/ui/Organizer/Overview";
+import CreateEventPage from "../pages/ui/Organizer/MyEvent";
+import Overview from "../pages/ex";
 
 const router = createBrowserRouter([
     {   element:<DashboardLayout/>,
@@ -25,15 +30,23 @@ const router = createBrowserRouter([
         element:<AdminDashbboardLayout/>,
         children:[
             {
+                path:'/overview',
+                element:<OverviewPage/>
+            },
+            {
                 path:'/createEvent',
                 element:<CreateEvent/>
             },
             {
-                path:'/myEvent'
+                path:'/myEvent',
+                element:<CreateEventPage/>
             },
             {
-                path:'/myEvent'
-            },
+                path:'/transaction',
+                // element:<TransactionsPage/>
+                element:<Overview/>
+            }
+
         ]
     },
     {
@@ -45,8 +58,8 @@ const router = createBrowserRouter([
         path:'/logIn'
     },
     {
-        element:<CustomEvent/>,
-        path:'/BuildEvent'
+        element:<TransactionsPages/>,
+        path:'/newTransaction'
     },
     {
         element:<CustomEvent/>,

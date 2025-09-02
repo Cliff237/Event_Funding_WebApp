@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
@@ -38,7 +38,8 @@ const LoginPage = () => {
       setCurrentError('');
     }
   };
-
+  const [showPassword, setShowPassword] = useState(false);
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
   // Form validation
   const validateForm = () => {
     if (!formData.email.trim()) {
@@ -59,24 +60,49 @@ const LoginPage = () => {
     return true;
   };
 
-  // Form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      setIsLoading(true);
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        console.log('Login successful:', formData);
-        // Redirect or handle successful login here
-      } catch (error) {
+// Form submission
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (validateForm()) {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
         setCurrentError('Invalid email or password');
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.log('Login successful:', result);
+        // You can save JWT token or user info here, for example:
+        // localStorage.setItem('token', result.token);
+        // Redirect to dashboard
+        if (result.user.role === "SUPER_ADMIN") {
+            // navigate("/super-admin-dashboard");
+            console.log("Super Admin logged in");
+            
+          } else if (result.user.role === "ORGANIZER") {
+            // navigate("/organizer-dashboard");
+          }
       }
+    } catch (error) {
+      setCurrentError('Server error, please try again later');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-800/30 flex items-center justify-center p-4">
@@ -149,8 +175,7 @@ const LoginPage = () => {
                     />
                   </div>
                 </motion.div>
-                
-                {/* Password Field - larger */}
+                                
                 <motion.div
                   variants={{
                     hidden: { y: 20, opacity: 0 },
@@ -162,20 +187,26 @@ const LoginPage = () => {
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FaLock className="text-gray-400 text-lg" /> {/* Larger icon */}
+                      <FaLock className="text-gray-400 text-lg" />
                     </div>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       id="password"
                       name="password"
                       value={formData.password}
                       onChange={handleInputChange}
-                      className={`pl-12 w-full px-4 py-3 rounded-lg border ${currentError.includes('Password') ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`} // Larger input
+                      className={`pl-12 w-full px-4 py-3 rounded-lg border ${currentError.includes('Password') ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500 text-base`}
                       placeholder="••••••••"
                     />
+                    <div
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                      onClick={togglePasswordVisibility}
+                    >
+                      {showPassword ? <FaEyeSlash className="text-gray-400"  /> : <FaEye className="text-gray-400"  />}
+                    </div>
                   </div>
                 </motion.div>
-                
+  
                 {/* Remember Me & Forgot Password */}
                 <motion.div
                   variants={{

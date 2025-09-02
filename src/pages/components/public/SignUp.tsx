@@ -1,6 +1,6 @@
 import { useState, useRef, type ChangeEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaUser, FaEnvelope, FaLock, FaCamera, FaCheck} from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaCamera, FaCheck,  FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const SignUp = () => {
@@ -50,6 +50,12 @@ const SignUp = () => {
       setCurrentError('');
     }
   };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Toggle functions
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
   // Handle profile image upload
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -107,13 +113,37 @@ const SignUp = () => {
   // Form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (validateForm()) {
-      
-      // Form is valid, proceed with submission
-      console.log('Form submitted:', { ...formData, profileImage });
-      // Here you would typically send the data to your backend
+    if (!validateForm()) return;
+    try {
+      // Prepare form data for backend
+      const data = new FormData();
+      data.append('name', formData.name);
+      data.append('email', formData.email);
+      data.append('password', formData.password);
+      if (fileInputRef.current?.files?.[0]) {
+        data.append('profile', fileInputRef.current.files[0]);
+      }
+
+      const response = await fetch('http://localhost:5000/api/auth/signup', {
+        method: 'POST',
+        body: data,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setCurrentError(result.message || 'Something went wrong');
+        return;
+      }
+
+      // Success
+      console.log('Signup successful:', result);
       alert('Account created successfully!');
+      // Optionally redirect to login page
+      // navigate('/login');
+    } catch (err: any) {
+      console.error(err);
+      setCurrentError('Server error. Please try again later.');
     }
   };
 
@@ -238,7 +268,7 @@ const SignUp = () => {
                   </div>
                 </motion.div>
                 
-                {/* Password Field */}
+                 {/* Password Field */}
                 <motion.div variants={itemVariants}>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                     Password
@@ -248,7 +278,7 @@ const SignUp = () => {
                       <FaLock className="text-gray-400" />
                     </div>
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       id="password"
                       name="password"
                       value={formData.password}
@@ -256,9 +286,15 @@ const SignUp = () => {
                       className={`pl-10 w-full px-4 py-2 rounded-lg border ${errors.password ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                       placeholder="••••••••"
                     />
+                    <div
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                      onClick={togglePasswordVisibility}
+                    >
+                      {showPassword ? <FaEyeSlash className="text-gray-400" /> : <FaEye className="text-gray-400"/>}
+                    </div>
                   </div>
                 </motion.div>
-                
+
                 {/* Confirm Password Field */}
                 <motion.div variants={itemVariants}>
                   <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
@@ -269,7 +305,7 @@ const SignUp = () => {
                       <FaLock className="text-gray-400" />
                     </div>
                     <input
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
                       id="confirmPassword"
                       name="confirmPassword"
                       value={formData.confirmPassword}
@@ -277,9 +313,15 @@ const SignUp = () => {
                       className={`pl-10 w-full px-4 py-2 rounded-lg border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-300'} focus:outline-none focus:ring-2 focus:ring-purple-500`}
                       placeholder="••••••••"
                     />
+                    <div
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                      onClick={toggleConfirmPasswordVisibility}
+                    >
+                      {showConfirmPassword ? <FaEyeSlash className="text-gray-400"/> : <FaEye className="text-gray-400"/>}
+                    </div>
                   </div>
                 </motion.div>
-          
+                          
                 {/* Accept Policy Checkbox */}
                 <motion.div variants={itemVariants} className="flex items-start">
                   <div className="flex items-center h-5">
