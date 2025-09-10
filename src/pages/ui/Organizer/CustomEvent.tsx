@@ -56,10 +56,10 @@ function CustomEvent() {
         type: 'text',
         required: true,
         readOnly: true,
-        conditional: {
-        fieldId: 'payment-method',
-        values: [method]
-        }
+        // conditional: {
+        // fieldId: 'payment-method',
+        // values: [method]
+        // }
     };
     
     setEvent(prev => ({
@@ -99,7 +99,7 @@ function CustomEvent() {
           required: field.required,
           readOnly: field.readOnly,
           placeholder: field.label,
-          defaultValue: field.defaultValue
+        //   defaultValue: field.defaultValue
         };
     
         switch (field.type) {

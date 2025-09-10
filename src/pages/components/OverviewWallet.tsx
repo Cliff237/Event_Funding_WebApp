@@ -1,7 +1,109 @@
-import { AnimatePresence } from 'framer-motion'
-import React from 'react'
+import { AnimatePresence, motion, type Variants } from 'framer-motion'
+import React, { useState } from 'react'
+import type { EventWallet } from './Organizer/Events/type';
+import { Building2, CreditCard, Eye, Settings, Smartphone } from 'lucide-react';
 
 function OverviewWallet() {
+  const [eventWallets] = useState<EventWallet[]>([
+      {
+        id: '1',
+        eventName: 'AICS School Fees 2024',
+        category: 'school',
+        balance: 2500000,
+        targetAmount: 5000000,
+        totalContributions: 2500000,
+        lastActivity: '2024-01-15T10:30:00Z',
+        status: 'active',
+        progress: 50,
+        contributorCount: 45
+      },
+      {
+        id: '2',
+        eventName: 'Marie & Paul Wedding',
+        category: 'wedding',
+        balance: 850000,
+        targetAmount: 1000000,
+        totalContributions: 850000,
+        lastActivity: '2024-01-14T14:20:00Z',
+        status: 'active',
+        progress: 85,
+        contributorCount: 32
+      },
+      {
+        id: '3',
+        eventName: 'Papa Joseph Memorial',
+        category: 'funeral',
+        balance: 1200000,
+        totalContributions: 1200000,
+        lastActivity: '2024-01-13T16:45:00Z',
+        status: 'completed',
+        progress: 100,
+        contributorCount: 67
+      },
+      {
+        id: '4',
+        eventName: 'Emma\'s Sweet 16',
+        category: 'birthday',
+        balance: 450000,
+        targetAmount: 600000,
+        totalContributions: 450000,
+        lastActivity: '2024-01-12T09:15:00Z',
+        status: 'active',
+        progress: 75,
+        contributorCount: 28
+      }
+    ]);
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'school':
+        return 'from-blue-500 to-indigo-600';
+      case 'wedding':
+        return 'from-pink-500 to-rose-600';
+      case 'funeral':
+        return 'from-gray-500 to-slate-600';
+      case 'birthday':
+        return 'from-yellow-500 to-orange-600';
+      default:
+        return 'from-purple-500 to-purple-600';
+    }
+  };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'text-green-600 bg-green-100';
+      case 'completed': return 'text-blue-600 bg-blue-100';
+      case 'locked': return 'text-orange-600 bg-orange-100';
+      case 'cancelled': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const formatAmount = (amount: number) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'XAF',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+  const cardVariants = {
+    hidden: { scale: 0.95, opacity: 0 },
+    visible: {
+      scale: 1,
+      opacity: 1,
+      transition: {type: "spring", stiffness: 100, damping: 15  }
+    },
+    hover: {
+      scale: 1.02,
+      transition: {type: "spring",stiffness: 400, damping: 10 }
+    }
+  } satisfies Variants;
   return (
     <div className="p-6 space-y-4">
       <AnimatePresence>
@@ -14,14 +116,13 @@ function OverviewWallet() {
             exit="hidden"
             transition={{ delay: index * 0.1 }}
             whileHover="hover"
-            className="relative overflow-hidden rounded-xl border border-gray-200 bg-gradient-to-r from-white to-gray-50 hover:shadow-lg transition-all duration-300"
+            className="relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all duration-300"
           >
             <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${getCategoryColor(wallet.category)}`} />
             
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className="text-2xl">{getCategoryEmoji(wallet.category)}</div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{wallet.eventName}</h3>
                     <div className="flex items-center space-x-2">

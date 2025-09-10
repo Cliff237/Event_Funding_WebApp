@@ -81,7 +81,7 @@ export default function TransactionsPage(){
             eventId: '2',
             eventName: 'Marie & Paul Wedding',
             transactionId: 'TX003',
-            paymentMethod: 'bank',
+            paymentMethod: 'visa',
             date: '2024-01-13T16:45:00Z',
             status: 'success',
             amount: 25000,
@@ -95,7 +95,7 @@ export default function TransactionsPage(){
             eventId: '2',
             eventName: 'Marie & Paul Wedding',
             transactionId: 'TX003',
-            paymentMethod: 'bank',
+            paymentMethod: 'visa',
             date: '2024-01-13T16:45:00Z',
             status: 'success',
             amount: 25000,
@@ -259,7 +259,7 @@ export default function TransactionsPage(){
     }
   };  
     return (
-        <div className="h-screen p-1 bg-gray-50/90 overflow-y-auto overflow-x-hidden">
+        <div className="h-screen w-[100vw] md:w-full p-1 bg-gray-50/90 overflow-y-auto overflow-x-hidden">
             {/* header */}
             <div className="bg-gray-100 shadow-md border-b">
                 <div className="px-4 sm:px-6 py-">
@@ -267,9 +267,6 @@ export default function TransactionsPage(){
                     <div>
                         <h1 className="font-bold text-gray-900">Transaction </h1>
                     </div>
-                    {/* <div className="text-gray-900 flex justify-centeritems-center ">
-                        <h3 className="font-semibold">Darkness</h3>
-                    </div> */}
                 </div>
                 </div>
             </div>
@@ -308,7 +305,7 @@ export default function TransactionsPage(){
                             </div>
 
                             {/* overViewCard  */}
-                            <div className="grid grid-cols-2 gap-6 mb-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-3">
                                 <TransactionCard totalTransaction={'Total Transactions'} overViewStat={overviewStats.totalTransactions.toLocaleString()} icon={<BarChart3 className="w-6 h-6 text-purple-800" />}/>
                                 <TransactionCard totalTransaction={"Total Amount"} overViewStat={formatAmount(overviewStats.totalAmount)} icon={<DollarSign className="w-6 h-6 text-green-800" />}/>
                                 <TransactionCard totalTransaction={"Successful"} overViewStat={overviewStats.successfulTransactions} icon={ <CheckCircle className="w-6 h-6 text-green-800" />}/>

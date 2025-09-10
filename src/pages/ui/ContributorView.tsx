@@ -25,7 +25,6 @@ const ContributorView = ({ event }: { event: EventConfig }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  
   // Define form steps
   const steps = [
     {

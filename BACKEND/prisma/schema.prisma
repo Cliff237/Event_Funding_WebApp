@@ -96,7 +96,6 @@ model Event {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  
   // Relations
   organizer    User          @relation( fields: [organizerId], references: [id])
   organizerId  Int
@@ -120,7 +119,6 @@ model Payment {
   // Relations
   eventId Int
   event   Event @relation(fields: [eventId], references: [id])
-
   receipt Receipt?
 }
 // Dynamic Form Fields for Event

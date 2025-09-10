@@ -11,7 +11,12 @@ import TransactionsPages from "../pages/ui/file";
 import TransactionsPage from "../pages/ui/Organizer/Transactionspage";
 import OverviewPage from "../pages/ui/Organizer/Overview";
 import CreateEventPage from "../pages/ui/Organizer/MyEvent";
-import Overview from "../pages/ex";
+import CreateEvents from "../pages/ui/Organizer/CreateEvents";
+import MyEvent from "../pages/ui/Organizer/MyEvent";
+import MyEventsPage from "../pages/ui/file";
+import SuperAdminOverview from "../pages/ui/Admin/AdminOverview";
+import SuperAdminUsers from "../pages/ui/Admin/AdminUsers";
+import SuperAdminSchools from "../pages/ui/Admin/AdminSchools";
 
 const router = createBrowserRouter([
     {   element:<DashboardLayout/>,
@@ -35,16 +40,26 @@ const router = createBrowserRouter([
             },
             {
                 path:'/createEvent',
-                element:<CreateEvent/>
+                element:<CreateEvents/>
             },
             {
                 path:'/myEvent',
-                element:<CreateEventPage/>
+                element:<MyEvent/>
             },
             {
                 path:'/transaction',
-                // element:<TransactionsPage/>
-                element:<Overview/>
+                // element:<MyEventsPage/>
+                // element:<CreateEvent/>
+                element:<TransactionsPage/>
+            },{
+                path:'/superAdmin/overview',
+                element:<SuperAdminOverview/>
+            },{
+                path:'/superAdmin/users',
+                element:<SuperAdminUsers/>
+            },{
+                path:'/superAdmin/schools',
+                element:<SuperAdminSchools/>
             }
 
         ]
@@ -65,5 +80,6 @@ const router = createBrowserRouter([
         element:<CustomEvent/>,
         path:'/CustomEvent'
     },
+
 ])
 export default router

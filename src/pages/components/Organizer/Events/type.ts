@@ -1,26 +1,28 @@
 // src/components/EventBuilder/types.ts
-export type FieldType = 'text' | 'number' | 'select' | 'radio' | 'checkbox' | 'email' | 'tel' | 'file';
-export type PaymentMethod = 'momo' | 'om' | 'bank';
+export type FieldType = 'text' | 'number' | 'image'| 'select' | 'radio' | 'checkbox' | 'email' | 'tel' | 'file' | 'conditional';
+export type EventType = 'school' | 'wedding' | 'funeral' | 'birthday' | 'business' | 'charity' | 'conference' | 'other';
+export type PaymentMethod = 'momo' | 'om' | 'visa';
 export type TransactionStatus = 'success' | 'pending' | 'failed';
+export type EventStatus =  'active' | 'completed' | 'cancelled' | 'locked' | 'paused';
 export type PaymentGetMethod = 'wallet' | 'momo' | 'om' | 'bank';
 
-export interface FormField {
-  accept?: string;
-  id: string;
-  label: string;
-  type: FieldType;
-  required: boolean;
-  readOnly: boolean;
-  defaultValue?: string | number;
-  options?: string[];
-  min?: number;
-  max?: number;
-  fixedValue?: boolean;
-  conditional?: {
-    fieldId: string;
-    values: string[];
-  };
-}
+// export interface FormField {
+//   accept?: string;
+//   id: string;
+//   label: string;
+//   type: FieldType;
+//   required: boolean;
+//   readOnly: boolean;
+//   defaultValue?: string | number;
+//   options?: string[];
+//   min?: number;
+//   max?: number;
+//   fixedValue?: boolean;
+//   conditional?: {
+//     fieldId: string;
+//     values: string[];
+//   };
+// }
 
 export interface EventConfig {
   id: string;
@@ -64,7 +66,7 @@ export interface Event {
   id: string;
   name: string;
   // type: string;
-  category: 'wedding' | 'school' | 'funeral' | 'birthday';
+  category: EventType;
   customFields:Array<{
     id: string;
     label: string;
@@ -87,12 +89,6 @@ export interface AccountDetails {
 export interface WalletSettings {
   freezeDuration: number;
   autoWithdraw: boolean;
-}
-
-export interface SchoolInfo {
-  name: string;
-  location: string;
-  contact: string;
 }
 
 export interface CustomField {
@@ -150,4 +146,130 @@ export interface QuickStats {
   icon: React.ReactNode;
   color: string;
   bgGradient: string;
+}
+
+// export interface Schools {
+//   id: string;
+//   name: string;
+//   logo: string;
+//   email: string;
+//   contact: string;
+//   location: string;
+// }
+
+// create Event 
+export interface SchoolInfo {
+  id: string;
+  name: string;
+  logo: string;
+  email?: string;
+  contact?: string;
+  location?: string;
+}
+
+export interface FormField {
+  id: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+  defaultValue?: string | number;
+  condition?: {
+    fieldId: number | string;
+    value: string;
+  };
+  min?: number;
+  max?: number;
+  fixedValue?: boolean;
+  readOnly: boolean;
+}
+
+export type ReceiptLayout = 'one' | 'two';
+export type Align = 'left' | 'center' | 'right';
+export type showDividers = boolean;
+
+export interface EventFormData {
+  eventType: EventType;
+  schoolId?: string;
+  organizerName: string;
+  organizerPassword: string;
+  eventName: string;
+  fields: FormField[];
+  paymentMethods: PaymentMethod[];
+  formColors: {
+    primary: string;
+    secondary: string;
+    text: string;
+    background: string;
+  };
+  eventTitle: string;
+  eventDescription: string;
+  walletType: 'app_wallet' | 'bank_account';
+  bankAccountId?: string;
+  fundraisingGoal: number;
+  deadline: string;
+  contributorMessage: string;
+  receiptConfig?: {
+    includeFields: string[];
+    school: {
+      name: string;
+      link: string;
+      contact: string;
+      logoUrl: string;
+    };
+    layout: ReceiptLayout;
+    align: Align;
+    includeQR: boolean;
+    showDividers?: boolean;
+    accentColor?: string;
+    additionalFields: Record<string, string>;
+    sampleData?: Record<string, string>;
+  };
+  eventCard: {
+    image: string;
+    title: string;
+    description: string;
+  };
+  condition?: {
+    fieldId: number | string;
+    value: string;
+  };
+}
+
+// My events Page 
+export interface Events {
+  id: string;
+  title: string;
+  description: string;
+  category:EventType
+  status:EventStatus
+  targetAmount?: number;
+  currentAmount: number;
+  contributorCount: number;
+  createdDate: string;
+  defaultValue?: string | number;
+  deadline: string;
+  duration: number; // in days
+  isLocked: boolean;
+  progress: number;
+  totalTransactions: number;
+  avgContribution: number;
+  lastActivity: string;
+  completionRate: number;
+  featuredContributors: string[];
+}
+export interface FilterEvent{
+  
+}
+export interface EventStats {
+  totalRevenue: number;
+  conversionRate: number;
+  dailyContributions: number[];
+  paymentMethodBreakdown: {
+    momo: number;
+    om: number;
+    bank: number;
+    wallet: number;
+  };
 }
