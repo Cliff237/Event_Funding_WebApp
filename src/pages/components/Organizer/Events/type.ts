@@ -129,23 +129,27 @@ export interface EventWallet {
 }
 
 export interface PlatformStats {
-  totalEvents: number;
-  activeEvents: number;
-  totalRevenue: number;
-  monthlyGrowth: number;
-  totalUsers: number;
-  successRate: number;
-  avgContribution: number;
-  totalTransactions: number;
+  totalEvents?: number;
+  activeEvents?: number;
+  totalOrganizers?: number;
+  totalSchoolAdmins?: number;
+  totalRevenue?: number;
+  recentGrowth?: number;
+  regularOrganizers?: number;
+  monthlyGrowth?: number;
+  totalUsers?: number;
+  successRate?: number;
+  avgContribution?: number;
+  totalTransactions?: number;
 }
 
 export interface QuickStats {
-  label: string;
-  value: string;
-  change: number;
-  icon: React.ReactNode;
-  color: string;
-  bgGradient: string;
+  label?: string;
+  value?: string ;
+  change?: number;
+  icon?: React.ReactNode;
+  color ?: string;
+  bgGradient?: string;
 }
 
 // export interface Schools {

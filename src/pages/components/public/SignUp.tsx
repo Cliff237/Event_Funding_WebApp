@@ -2,6 +2,7 @@ import { useState, useRef, type ChangeEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaLock, FaCamera, FaCheck,  FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import {toast} from 'react-toastify';
 
 const SignUp = () => {
   // Form state
@@ -78,6 +79,10 @@ const SignUp = () => {
   const validateForm = () => {
     
     if (!formData.name.trim()) {
+      toast.error('Name is required',{
+        className: "bg-red-600 text-white font-semibold rounded-lg shadow-md",
+        progressClassName: "bg-white"
+      });
       setCurrentError('Name is required');
       return false;
     }
@@ -132,6 +137,7 @@ const SignUp = () => {
       const result = await response.json();
 
       if (!response.ok) {
+        toast.error(result.message || 'Something went wrong');
         setCurrentError(result.message || 'Something went wrong');
         return;
       }
@@ -380,6 +386,7 @@ const SignUp = () => {
           </div>
         </div>
       </motion.div>
+
     </div>
   );
 };

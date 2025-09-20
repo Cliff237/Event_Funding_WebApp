@@ -25,9 +25,9 @@ function OverviewPage() {
 
   return (
     
-    <div className="h-screen overflow-y-auto w-ful overflow-x-hidden">
+    <div className="h-screen overflow-y-auto w-full overflow-x-hidden">
       <motion.div
-        className="max-w-7xl mx-auto px-4 sm:px-6 py-8"
+        className="max-w-7xl mx-auto px-4 sm:px-6 py-8 "
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -38,7 +38,7 @@ function OverviewPage() {
           variants={itemVariants}
         >
           <div className='p-3'>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-900 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-700 bg-clip-text text-transparent">
               Welcome Mr Bitom to Your Dashboard Overview
             </h1>
             <p className="text-gray-600 mt-2">Monitor your events and platform performance</p>

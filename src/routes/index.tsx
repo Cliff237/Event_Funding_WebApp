@@ -5,18 +5,15 @@ import DashboardLayout from "../pages/components/public/dashboardLayout";
 import SignUp from "../pages/components/public/SignUp";
 import LogIn from "../pages/components/public/LogIn";
 import AdminDashbboardLayout from "../pages/components/Organizer/adminDashbboardLayout";
-import CreateEvent from "../pages/ui/Organizer/CreateEvent";
 import CustomEvent from "../pages/ui/Organizer/CustomEvent";
-import TransactionsPages from "../pages/ui/file";
 import TransactionsPage from "../pages/ui/Organizer/Transactionspage";
 import OverviewPage from "../pages/ui/Organizer/Overview";
-import CreateEventPage from "../pages/ui/Organizer/MyEvent";
 import CreateEvents from "../pages/ui/Organizer/CreateEvents";
 import MyEvent from "../pages/ui/Organizer/MyEvent";
-import MyEventsPage from "../pages/ui/file";
 import SuperAdminOverview from "../pages/ui/Admin/AdminOverview";
 import SuperAdminUsers from "../pages/ui/Admin/AdminUsers";
 import SuperAdminSchools from "../pages/ui/Admin/AdminSchools";
+import MyOrganizers from "../pages/ui/SchoolAdmin/MyOrganizer";
 
 const router = createBrowserRouter([
     {   element:<DashboardLayout/>,
@@ -48,8 +45,6 @@ const router = createBrowserRouter([
             },
             {
                 path:'/transaction',
-                // element:<MyEventsPage/>
-                // element:<CreateEvent/>
                 element:<TransactionsPage/>
             },{
                 path:'/superAdmin/overview',
@@ -57,6 +52,9 @@ const router = createBrowserRouter([
             },{
                 path:'/superAdmin/users',
                 element:<SuperAdminUsers/>
+            },{
+                path:'/schoolAdmin/organizer',
+                element:<MyOrganizers/>
             },{
                 path:'/superAdmin/schools',
                 element:<SuperAdminSchools/>
@@ -71,10 +69,6 @@ const router = createBrowserRouter([
     {
         element:<LogIn/>,
         path:'/logIn'
-    },
-    {
-        element:<TransactionsPages/>,
-        path:'/newTransaction'
     },
     {
         element:<CustomEvent/>,

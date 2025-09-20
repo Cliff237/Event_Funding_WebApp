@@ -1,5 +1,5 @@
 import  { useState } from 'react';
-import { Search, Filter, MoreHorizontal, Edit,Eye, Mail,School, User, Shield, ChevronDown, Download, UserPlus, RefreshCw, Users } from 'lucide-react';
+import { Search, MoreHorizontal, Edit,Eye, Mail, User, UserPlus } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
 
 type Role = 'SCHOOL_ADMIN' | 'ORGANIZER';
@@ -25,9 +25,8 @@ interface AppUser {
 }
 
 
-const SuperAdminUsers = () => {
+const MyOrganizers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | Role>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
   const [sortBy, setSortBy] = useState<SortableKey>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -78,34 +77,6 @@ const SuperAdminUsers = () => {
       createdAt: "2024-03-10T12:15:00Z",
       updatedAt: "2024-09-01T10:45:00Z",
       lastLogin: "2024-09-04T08:30:00Z"
-    },
-    {
-      id: 4,
-      name: "Events Pro Cameroun",
-      email: "contact@eventspro.cm",
-      role: "ORGANIZER",
-      profile: "https://api.dicebear.com/7.x/avataaars/svg?seed=EventsPro",
-      schoolId: null,
-      school: null,
-      eventsCount: 45,
-      status: "active",
-      createdAt: "2024-01-05T14:20:00Z",
-      updatedAt: "2024-08-30T12:10:00Z",
-      lastLogin: "2024-09-03T16:20:00Z"
-    },
-    {
-      id: 5,
-      name: "Paul Nkomo",
-      email: "paul.nkomo@gmail.com",
-      role: "ORGANIZER",
-      profile: "https://api.dicebear.com/7.x/avataaars/svg?seed=Paul",
-      schoolId: null,
-      school: null,
-      eventsCount: 3,
-      status: "inactive",
-      createdAt: "2024-08-15T09:30:00Z",
-      updatedAt: "2024-08-15T09:30:00Z",
-      lastLogin: "2024-08-20T14:15:00Z"
     }
   ]);
 
@@ -119,9 +90,8 @@ const SuperAdminUsers = () => {
       const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (user.school?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
       const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-      return matchesSearch && matchesRole && matchesStatus;
+      return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
       const getSortValue = (u: AppUser): string | number | Date => {
@@ -166,26 +136,6 @@ const SuperAdminUsers = () => {
     }
   };
 
-
-
-  const getRoleBadge = (role: Role) => {
-    const styles: Record<Role, string> = {
-      SCHOOL_ADMIN: 'bg-purple-100 text-purple-800 border-purple-200',
-      ORGANIZER: 'bg-purple-100 text-purple-800 border-purple-200'
-    };
-    
-    const labels: Record<Role, string> = {
-      SCHOOL_ADMIN: 'School Admin',
-      ORGANIZER: 'Organizer'
-    };
-
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full border ${styles[role] || 'bg-gray-100 text-gray-800'}`}>
-        {labels[role] || role}
-      </span>
-    );
-  };
-
   const getStatusBadge = (status: Status) => {
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -228,13 +178,13 @@ const SuperAdminUsers = () => {
         animate="visible"
         className="flex flex-col md:flex-row items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-800 bg-clip-text text-transparent">Users Management</h1>
-            <p className="text-gray-600 mt-1">Manage all organizers, school admins, and their permissions.</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-800 bg-clip-text text-transparent">Organizer Management</h1>
+            <p className="text-gray-600 mt-1">Manage Your Organizers.</p>
           </div>
           <div className="flex items-center gap-3">
             <button className="px-4 py-2 bg-p text-white rounded-lg bg-gradient-to-r from-purple-800 to-indigo-800 hover:cursor-pointer flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
-              Add User
+              Add Organizer
             </button>
           </div>
         </motion.div>
@@ -255,16 +205,6 @@ const SuperAdminUsers = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as 'all' | Role)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">All Roles</option>
-              <option value="ORGANIZER">Organizers</option>
-              <option value="SCHOOL_ADMIN">School Admins</option>
-            </select>
-
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as 'all' | Status)}
@@ -337,19 +277,13 @@ const SuperAdminUsers = () => {
                   Name/Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  School/Organization
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Events
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined
+                  Created On
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -381,16 +315,7 @@ const SuperAdminUsers = () => {
                       <div className="text-sm font-medium text-gray-900">{truncateText(user.name)}</div>
                       <div className="text-sm text-gray-500">{truncateText(user.email)}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      {getRoleBadge(user.role)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {truncateText(user.school ? user.school.name : 'Independent Organizer')}
-                    </div>
-                  </td>
+      
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{user.eventsCount}</div>
                   </td>
@@ -490,4 +415,4 @@ const SuperAdminUsers = () => {
   );
 };
 
-export default SuperAdminUsers;
+export default MyOrganizers;

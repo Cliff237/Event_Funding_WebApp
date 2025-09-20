@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeftIcon, ChevronRightIcon, Menu, X, Home, CalendarPlus, CalendarDays, Wallet, Bell, Settings, LogOut, User, School } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, Menu, X, Home, CalendarPlus, CalendarDays, Wallet, Bell, Settings, LogOut, User, School, Users2 } from "lucide-react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 
@@ -28,6 +28,7 @@ function LeftSideBar() {
     { name: "Create Event", path: "/createEvent", icon: <CalendarPlus className="text-xl" /> },
     { name: "My Event", path: "/myEvent", icon: <CalendarDays className="text-xl" /> },
     { name: "Transaction", path: "/transaction", icon: <Wallet className="text-xl" /> },
+    { name: "MyOrganizer", path: "/schoolAdmin/organizer", icon: <Users2 className="text-xl" /> },
     { 
       name: "Notification", 
       path: "/notification", 
@@ -52,13 +53,15 @@ function LeftSideBar() {
     <> 
       {/* Desktop view */}
       <motion.div 
-        className='hidden overflow-y-auto overflow-x-hidden h-full md:flex flex-col items-center gap-6 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white relative backdrop-blur-lg border-r border-slate-700/50'
+        className='hidden overflow-y-auto overflow-x-hidden h-full md:flex flex-col items-center gap-6 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/10 text-white relative backdrop-indigo-lg border-r border-slate-700/50'
         animate={{ width: isSidebarCollapsed ? "5rem" : "18rem" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
         initial={false}
       >
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/10 pointer-events-none" />
+        {/* 
+        bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-transparent to-blue-600/10 pointer-events-none" /> */}
         
         {/* Collapse button */}
         <motion.button 
@@ -106,7 +109,7 @@ function LeftSideBar() {
                   ${isSidebarCollapsed ? 'justify-center' : 'justify-start space-x-3'}
                 `}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+                <div className="absolute inset-0 w-full bg-gradient-to-r from-purple-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
                 
                 <div className="relative z-10 flex items-center justify-center min-w-[24px]">
                   {link.icon}

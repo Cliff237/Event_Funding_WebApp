@@ -8,7 +8,6 @@ interface RequestDocument {
   url: string;
 }
 
-type Priority = 'high' | 'medium' | 'low';
 
 interface SchoolRequest {
   id: number;
@@ -24,7 +23,6 @@ interface SchoolRequest {
   documents: RequestDocument[];
   requestDate: string; // ISO
   status: 'pending' | 'approved' | 'rejected' | string;
-  priority: Priority;
 }
 
 interface ApprovedSchool {
@@ -63,7 +61,7 @@ const SuperAdminSchools = () => {
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(1);
   
   const [validationForm, setValidationForm] = useState<ValidationForm>({
     logo: null,
@@ -97,7 +95,6 @@ const SuperAdminSchools = () => {
       ],
       requestDate: "2024-08-28T10:30:00Z",
       status: "pending",
-      priority: "high"
     },
     {
       id: 2,
@@ -116,7 +113,6 @@ const SuperAdminSchools = () => {
       ],
       requestDate: "2024-08-25T14:15:00Z",
       status: "pending",
-      priority: "medium"
     }
   ]);
 
@@ -174,7 +170,9 @@ const SuperAdminSchools = () => {
       logo: null,
       schoolAdminName: '',
       password: generatePassword(),
-      customMessage: `Dear ${request.organizerName},\n\nCongratulations! Your request to add "${request.schoolName}" to our platform has been approved.\n\nYour school admin credentials:\nUsername: ${request.organizerEmail}\nPassword: [PASSWORD]\n\nYou can now log in to manage your school's events.\n\nBest regards,\nPlatform Admin Team`
+      customMessage: `Dear ${request.organizerName},\n\nCongratulations! Your request to add "${request.schoolName}"
+       to our platform has been approved.\n\nYour school admin credentials:\nUsername: ${request.organizerEmail}\nPassword: [PASSWORD]
+       \n\nYou can now log in to manage your school's events.\n\nBest regards,\nPlatform Admin Team`
     });
     setShowValidationModal(true);
   };
@@ -183,7 +181,8 @@ const SuperAdminSchools = () => {
     setSelectedRequest(request);
     setRejectionForm({
       reason: '',
-      customMessage: `Dear ${request.organizerName},\n\nThank you for your interest in joining our platform. Unfortunately, we cannot approve your request for "${request.schoolName}" at this time.\n\nReason: [REASON]\n\nYou may resubmit your request after addressing the mentioned concerns.\n\nBest regards,\nPlatform Admin Team`
+      customMessage: `Dear ${request.organizerName},\n\nThank you for your interest in joining our platform. Unfortunately, we cannot approve your request for "
+      ${request.schoolName}" at this time.\n\nReason: [REASON]\n\nYou may resubmit your request after addressing the mentioned concerns.\n\nBest regards,\nPlatform Admin Team`
     });
     setShowRejectionModal(true);
   };
@@ -239,23 +238,11 @@ const SuperAdminSchools = () => {
     school.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getPriorityBadge = (priority: Priority) => {
-    const styles: Record<Priority, string> = {
-      high: 'bg-red-100 text-red-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      low: 'bg-green-100 text-green-800'
-    };
-    return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[priority]}`}>
-        {priority.toUpperCase()}
-      </span>
-    );
-  };
 
   const getStatusBadge = (status: string) => {
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-        status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
       }`}>
         {status.toUpperCase()}
       </span>
@@ -282,21 +269,14 @@ const SuperAdminSchools = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="h-screen w-full overflow-y-scroll  overflow-x-hidden p-6">
+
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 rounded-xl bg-gray-100 shadow-lg p-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Schools Management</h1>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-800 text-transparent bg-clip-text">Schools Management</h1>
             <p className="text-gray-600 mt-1">Manage school requests and approved institutions.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">{schoolRequests.length}</span> pending requests
-            </div>
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">{approvedSchools.length}</span> approved schools
-            </div>
           </div>
         </div>
       </div>
@@ -312,7 +292,7 @@ const SuperAdminSchools = () => {
               }}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'requests'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -325,7 +305,7 @@ const SuperAdminSchools = () => {
               }}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === 'schools'
-                  ? 'border-blue-500 text-blue-600'
+                  ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -344,13 +324,13 @@ const SuperAdminSchools = () => {
             placeholder={activeTab === 'requests' ? "Search requests..." : "Search schools..."}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
       </div>
 
       {/* Table Container */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg md:grid grid-cols-1 gap-4 p-4 shadow-xl">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -368,9 +348,6 @@ const SuperAdminSchools = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Students
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Priority
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Request Date
@@ -413,8 +390,8 @@ const SuperAdminSchools = () => {
                       <>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                              <School className="h-5 w-5 text-blue-600" />
+                            <div className="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                              <School className="h-5 w-5 text-purple-600" />
                             </div>
                             <div>
                               <div className="text-sm font-medium text-gray-900">{item.schoolName}</div>
@@ -434,16 +411,13 @@ const SuperAdminSchools = () => {
                           <div className="text-sm font-medium text-gray-900">{item.studentsCount.toLocaleString()}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getPriorityBadge(item.priority)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">{formatDate(item.requestDate)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleViewDetails(item)}
-                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                              className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
                               title="View Details"
                             >
                               <Eye className="h-4 w-4" />
@@ -473,9 +447,9 @@ const SuperAdminSchools = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <img
-                              src={item.logo}
+                              
                               alt={item.name}
-                              className="h-10 w-10 rounded-lg object-cover mr-3"
+                              className="h-10 w-10  rounded-lg object-cover mr-3"
                             />
                             <div>
                               <div className="text-sm font-medium text-gray-900">{item.name}</div>
@@ -504,13 +478,13 @@ const SuperAdminSchools = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleViewDetails(item)}
-                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                              className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
                               title="View Details"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
-                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                              className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
                               title="Send Email"
                             >
                               <Mail className="h-4 w-4" />
@@ -522,23 +496,73 @@ const SuperAdminSchools = () => {
                   ))}
             </tbody>
           </table>
+
+          {/* Empty State */}
+          {(activeTab === 'requests' ? currentRequests.length === 0 : currentSchools.length === 0) && (
+            <div className="text-center py-12">
+              <School className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {activeTab === 'requests' ? 'No pending requests' : 'No approved schools'}
+              </h3>
+              <p className="text-gray-500">
+                {activeTab === 'requests' 
+                  ? 'All school requests have been processed.' 
+                  : 'Schools will appear here after validation.'
+                }
+              </p>
+            </div>
+          )}
+        </div>
+      
+        {/* Pagination */}
+        <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center text-sm text-gray-700">
+              <p>
+                {activeTab==='requests' ? 
+                 `Showing ${((currentPage - 1) * itemsPerPage) + 1} to ${Math.min(currentPage * itemsPerPage, filteredRequests.length)} of ${filteredRequests.length} results`
+                 :
+                 `Showing ${((currentPage - 1) * itemsPerPage) + 1} to ${Math.min(currentPage * itemsPerPage, filteredSchools.length)} of ${filteredSchools.length} results`
+                 }
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 border border-gray-300 rounded bg-purple-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-800"
+              >
+                Previous
+              </button>
+              
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const page = i + 1;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 border rounded text-sm ${
+                      currentPage === page
+                        ? 'bg-purple-600 text-white border-purple-600'
+                        : 'border-gray-300 text-gray-500 bg-purple-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-purple-800 bg-purple-700"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Empty State */}
-        {(activeTab === 'requests' ? currentRequests.length === 0 : currentSchools.length === 0) && (
-          <div className="text-center py-12">
-            <School className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {activeTab === 'requests' ? 'No pending requests' : 'No approved schools'}
-            </h3>
-            <p className="text-gray-500">
-              {activeTab === 'requests' 
-                ? 'All school requests have been processed.' 
-                : 'Schools will appear here after validation.'
-              }
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Details Modal */}
@@ -594,7 +618,7 @@ const SuperAdminSchools = () => {
                               href={`https://${(selectedRequest as SchoolRequest | ApprovedSchool).website}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-blue-600 hover:text-blue-800"
+                              className="text-sm text-purple-600 hover:text-purple-800"
                             >
                               {(selectedRequest as SchoolRequest | ApprovedSchool).website}
                             </a>
@@ -653,7 +677,7 @@ const SuperAdminSchools = () => {
                                 <p className="text-sm font-medium text-gray-900">{doc.name}</p>
                                 <p className="text-xs text-gray-500 uppercase">{doc.type}</p>
                               </div>
-                              <button className="text-blue-600 hover:text-blue-800 text-sm">
+                              <button className="text-purple-600 hover:text-purple-800 text-sm">
                                 View
                               </button>
                             </div>
@@ -669,7 +693,7 @@ const SuperAdminSchools = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                           <span className="text-sm font-medium text-gray-900">Total Events</span>
-                          <span className="text-sm font-semibold text-blue-600">{(selectedRequest as ApprovedSchool).eventsCount}</span>
+                          <span className="text-sm font-semibold text-purple-600">{(selectedRequest as ApprovedSchool).eventsCount}</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                           <span className="text-sm font-medium text-gray-900">Status</span>
@@ -745,7 +769,7 @@ const SuperAdminSchools = () => {
                   />
                   <label
                     htmlFor="logo-upload"
-                    className="cursor-pointer text-blue-600 hover:text-blue-700"
+                    className="cursor-pointer text-purple-600 hover:text-purple-700"
                   >
                     Click to upload logo
                   </label>
@@ -765,7 +789,7 @@ const SuperAdminSchools = () => {
                     ...prev,
                     schoolAdminName: e.target.value
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   placeholder="Enter admin name"
                 />
               </div>
@@ -783,14 +807,14 @@ const SuperAdminSchools = () => {
                       ...prev,
                       password: e.target.value
                     }))}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   />
                   <button
                     onClick={() => setValidationForm(prev => ({
                       ...prev,
                       password: generatePassword()
                     }))}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                   >
                     Generate New
                   </button>
@@ -809,7 +833,7 @@ const SuperAdminSchools = () => {
                     customMessage: e.target.value
                   }))}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   placeholder="Customize the validation email message..."
                 />
               </div>
@@ -858,7 +882,7 @@ const SuperAdminSchools = () => {
                     ...prev,
                     reason: e.target.value
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="">Select a reason...</option>
                   <option value="Incomplete documentation">Incomplete documentation</option>
@@ -881,7 +905,7 @@ const SuperAdminSchools = () => {
                     customMessage: e.target.value
                   }))}
                   rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   placeholder="Customize the rejection email message..."
                 />
               </div>

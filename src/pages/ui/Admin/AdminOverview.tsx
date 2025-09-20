@@ -1,27 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
-import { Calendar, Users, TrendingUp, Activity, School, Heart, Music, Briefcase, Search, Filter, RefreshCw } from 'lucide-react';
+import { Calendar, Users, School, Heart, Music, Briefcase,Filter, RefreshCw} from 'lucide-react';
+import type { PlatformStats, QuickStats } from '../../components/Organizer/Events/type';
+import StatMatricCard from '../../components/Organizer/StatMatricCard';
+import { AnimatePresence, motion, type Variants } from 'framer-motion';
 
 const SuperAdminOverview = () => {
+
   const [dateRange, setDateRange] = useState('30');
   const [isLoading, setIsLoading] = useState(false);
-
+  const [activeView, setActiveView] = useState<'organizer' | 'event'>('organizer');
+  const [chartType, setChartType] = useState<'pie' | 'bar' | 'line'>('pie');
   // Mock data - replace with actual API calls
-  const [dashboardData, setDashboardData] = useState({
-    totalEvents: 1247,
-    totalOrganizers: 89,
-    schoolAdmins: 23,
+  const [platformStats, setPlatformStats] = useState<PlatformStats>({
+    totalEvents:20,
+    totalOrganizers:89,
+    totalSchoolAdmins:23,
     regularOrganizers: 66,
     recentGrowth: 12.5
   });
 
-  // Events by category data
+  const quickStats: QuickStats[] = [
+    {
+      label: 'Total Events',
+      value: (platformStats.totalEvents??0).toString(),
+      change: platformStats.recentGrowth??0,
+      icon: <Calendar className="w-6 h-6" />,
+      color: 'text-green-600',
+      bgGradient: 'from-green-400 to-emerald-700'
+    },
+    {
+      label: 'Total organizers',
+      value: (platformStats.totalOrganizers??0).toString(),
+      change: platformStats.recentGrowth??0,
+      icon: <Users className="w-6 h-6" />,
+      color: 'text-purple-600',
+      bgGradient: 'from-purple-400 to-indigo-600'
+    },
+    {
+      label: 'Total School Admins',
+      value: (platformStats.totalSchoolAdmins??0).toString(),
+      change: platformStats.recentGrowth??0,
+      icon: <School className="w-6 h-6" />,
+      color: 'text-red-100',
+      bgGradient: 'from-blue-400 to-blue-600'
+    },
+  ];
+
+  
   const eventsByCategory = [
-    { name: 'School Events', count: 456, color: '#8B5CF6', icon: School },
-    { name: 'Weddings', count: 312, color: '#EF4444', icon: Heart },
-    { name: 'Concerts', count: 234, color: '#10B981', icon: Music },
-    { name: 'Corporate', count: 189, color: '#F59E0B', icon: Briefcase },
-    { name: 'Others', count: 56, color: '#6B7280', icon: Activity }
+    { name: 'School Events', count: 456,  bgGradient: 'from-blue-400 to-blue-600', icon: School },
+    { name: 'Weddings', count: 312, bgGradient: 'from-pink-400 to-pink-600', icon: Heart },
+    { name: 'Concerts', count: 234, bgGradient: 'from-green-400 to-emerald-700', icon: Music },
+    { name: 'Corporate', count: 189, bgGradient: 'from-yellow-400 to-yellow-600', icon: Briefcase },
   ];
 
   // Organizer distribution data
@@ -56,14 +87,27 @@ const SuperAdminOverview = () => {
     }, 1000);
   };
 
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {y: 0,opacity: 1,
+      transition: { type: "spring", stiffness: 100
+      }
+    }
+  }satisfies Variants;
+  
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="h-screen w-full overflow-y-s  overflow-x-hidden p-6">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-8 rounded-xl bg-gray-100 shadow-lg p-3">
+        <motion.div
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible" 
+         className="flex flex-col md:flex-row items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-            <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your platform.</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-800 bg-clip-text text-transparent">
+              Welcome Mr Bitom to Your Dashboard Overview
+            </h1>
           </div>
           <div className="flex items-center gap-4">
             <select 
@@ -78,192 +122,202 @@ const SuperAdminOverview = () => {
             </select>
             <button 
               onClick={refreshData}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-colors"
+              className="px-4 py-2 bg-purple-700 text-white rounded-lg hover:bg-purple-800 hover:cursor-pointer flex items-center gap-2 transition-colors"
               disabled={isLoading}
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Events</p>
-              <p className="text-3xl font-bold text-gray-900">{dashboardData.totalEvents.toLocaleString()}</p>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-green-600 ml-1">+{dashboardData.recentGrowth}% vs last period</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Organizers</p>
-              <p className="text-3xl font-bold text-gray-900">{dashboardData.totalOrganizers}</p>
-              <div className="flex items-center mt-2">
-                <span className="text-sm text-gray-500">Regular: {dashboardData.regularOrganizers}</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Users className="h-6 w-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">School Admins</p>
-              <p className="text-3xl font-bold text-gray-900">{dashboardData.schoolAdmins}</p>
-              <div className="flex items-center mt-2">
-                <span className="text-sm text-gray-500">Active institutions</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <School className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Rate</p>
-              <p className="text-3xl font-bold text-gray-900">94%</p>
-              <div className="flex items-center mt-2">
-                <span className="text-sm text-green-600">Excellent engagement</span>
-              </div>
-            </div>
-            <div className="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Activity className="h-6 w-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
+      <div className="grid  grid-cols-1  md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {quickStats.map((stat, index) => (
+          <StatMatricCard
+            index={index}
+            label={stat.label??''}
+            value={stat.value??''}
+            change={stat.change??0}
+            icon={stat.icon}
+            bgGradient={stat.bgGradient??''}  />
+        ))}
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Events by Category */}
-        <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Events by Category</h3>
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search categories..."
-                className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            {eventsByCategory.map((category) => {
-              const Icon = category.icon;
-              const percentage = ((category.count / dashboardData.totalEvents) * 100).toFixed(1);
-              
-              return (
-                <div key={category.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{backgroundColor: category.color + '20'}}>
-                      <Icon className="h-5 w-5" style={{color: category.color}} />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{category.name}</p>
-                      <p className="text-sm text-gray-500">{percentage}% of total events</p>
-                    </div>
+     
+      {/* Events by Category */}
+      <div className=" bg-white rounded-xl p-6 shadow-lg border border-gray-200 mb-4">
+        <h1 className="text-lg font-semibold text-gray-900">Events by Category</h1>          
+        <div className="space-y-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {eventsByCategory.map((category) => {
+            const Icon = category.icon;
+            const percentage = (((platformStats.totalEvents??0)/category.count) * 100).toFixed(1);
+            
+            return (
+              <div key={category.name} className="flex items-center justify-between p-4 lg:p-6 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-xl bg-gradient-to-br ${category.bgGradient} text-white shadow-lg`}>
+                    <Icon className="h-5 w-5"  />
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900">{category.count}</p>
-                    <p className="text-sm text-gray-500">events</p>
+                  <div>
+                    <p className="font-medium text-gray-900">{category.name}</p>
+                    <p className="text-sm text-gray-500">{percentage}% of total events</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Organizer Distribution */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Organizer Distribution</h3>
-            <Filter className="h-4 w-4 text-gray-400 cursor-pointer hover:text-gray-600" />
-          </div>
-          
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={organizerData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {organizerData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: any) => [`${value} organizers`, 'Count']} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          
-          <div className="space-y-2 mt-4">
-            {organizerData.map((entry) => (
-              <div key={entry.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: entry.color}}></div>
-                  <span className="text-sm text-gray-600">{entry.name}</span>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">{category.count}</p>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{entry.value}</span>
               </div>
-            ))}
+            );
+          })}
+        </div>
+      </div>
+
+        {/* statistics  */}
+      <div className='p-4 rounded-xl bg-white shadow-lg mb-4'>
+        <div className='flex flex-col lg:flex-row w-[100vw] lg:w-full lg:items-center justify-between'>
+          <h1 className='text-3xl font-semibold text-gray-900'>Statistics</h1>
+          <div className='flex lg:justify-end w-full  items-center gap-2 ml-4'>
+
+            <select name="" id="" value={activeView} onChange={(e) => setActiveView(e.target.value as 'organizer' | 'event')}>
+              <option value="organizer">Organizer</option>
+              <option value="event">Event</option>
+            </select>
+            {/* filter dropdown  */}
+            <div className='flex items-center gap-2'>
+              <select value={chartType} onChange={(e) => setChartType(e.target.value as 'pie' | 'bar' | 'line')}>
+                <option value="" disabled>Filter</option>
+                <option value="bar">Bar Chart</option>
+                <option value="line">Line Chart</option>
+                <option value="pie">Pie Chart</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* charts  */}
+        <div className='w-full rounded-xl shadow-lg p-4 flex justify-center items-center'>
+          <div className='w-full'> 
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${activeView}-${chartType}`}
+                initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+                className="w-full"
+              >
+                {activeView === 'organizer' ? (
+                  <div className="grid grid-cols-1  gap-6">
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        {chartType === 'pie' ? (
+                          <PieChart>
+                            <Pie
+                              data={organizerData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={5}
+                              dataKey="value"
+                              nameKey="name"
+                            >
+                              {organizerData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value: any, name: any) => [`${value}`, name]} />
+                          </PieChart>
+                        ) : chartType === 'bar' ? (
+                          <BarChart data={organizerData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#8B5CF6" radius={[6,6,0,0]} />
+                          </BarChart>
+                        ) : (
+                          <LineChart data={organizerData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} />
+                          </LineChart>
+                        )}
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="space-y-2">
+                        {organizerData.map((entry) => (
+                          <div key={entry.name} className="flex items-center space-x-2 ">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full" style={{backgroundColor: entry.color}}></div>
+                              <span className="text-sm text-gray-600">{entry.name}</span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">{entry.value}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">Monthly Trends</h3>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                          <span className="text-sm text-gray-600">Events</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                          <span className="text-sm text-gray-600">New Organizers</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        {chartType === 'bar' ? (
+                          <BarChart data={monthlyTrends}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="events" fill="#3B82F6" radius={[6,6,0,0]} />
+                            <Bar dataKey="organizers" fill="#8B5CF6" radius={[6,6,0,0]} />
+                          </BarChart>
+                        ) : chartType === 'line' ? (
+                          <LineChart data={monthlyTrends}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="events" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} />
+                            <Line type="monotone" dataKey="organizers" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} />
+                          </LineChart>
+                        ) : (
+                          // Fallback for 'pie' selection on monthly view: show stacked area for nicer look
+                          <AreaChart data={monthlyTrends}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Area type="monotone" dataKey="events" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
+                            <Area type="monotone" dataKey="organizers" stackId="1" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.6} />
+                          </AreaChart>
+                        )}
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
 
-      {/* Monthly Trends */}
-      <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Monthly Trends</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-              <span className="text-sm text-gray-600">Events</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-              <span className="text-sm text-gray-600">New Organizers</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={monthlyTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Area type="monotone" dataKey="events" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
-              <Area type="monotone" dataKey="organizers" stackId="2" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.6} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+ 
 
       {/* Recent Activity */}
       <div className="mt-8 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
