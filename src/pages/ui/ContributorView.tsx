@@ -1,409 +1,673 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FiChevronLeft, 
-  FiChevronRight, 
-  FiSmartphone,
-  FiPhone,
-  FiCreditCard,
-  FiDollarSign,
-  FiShield,
-  FiLock
-} from "react-icons/fi";
-import type { EventConfig,PaymentMethod,FormField  } from "../components/Organizer/Events/type";
+  ArrowLeft, 
+  ArrowRight, 
+  CheckCircle, 
+  CreditCard, 
+  Smartphone, 
+  Wallet, 
+  Download,
+  ExternalLink,
+  AlertCircle,
+  School,
+  Heart,
+  Flower2,
+  PartyPopper,
+  Building2,
+  Users,
+  GraduationCap,
+  Calendar
+} from 'lucide-react';
+import type { EventFormData, FormField, PaymentMethod } from '../components/Organizer/Events/type';
 
-const ContributorView = ({ event }: { event: EventConfig }) => {
-  const [formData, setFormData] = useState<Record<string, any>>(()=>{
-     const initialData: Record<string, any> = {};
-     event.fields.forEach(field => {
-      if (field.defaultValue !== undefined) {
-        initialData[field.id] = field.defaultValue;
-      }
-    });
-    return initialData;
-  });
-  const [currentStep, setCurrentStep] = useState(0);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Define form steps
-  const steps = [
-    {
-      name: "Event Details",
-      fields: event.fields.filter(field => !field.conditional?.fieldId.includes('payment'))
+// Mock event data - in real app, this would come from API
+const getMockEventData = (slug: string): EventFormData => {
+  return {
+    eventType: 'school',
+    organizerName: 'Marie Tchinda',
+    organizerPassword: '',
+    eventName: 'Support Our School Library Project',
+    eventTitle: 'Help Us Build a Better Future Through Education',
+    eventDescription: 'We are raising funds to renovate our school library and purchase new books and computers for our students. Your contribution will directly impact the education of over 500 students.',
+    fields: [
+      { id: '1', label: 'Full Name', type: 'text', required: true, readOnly: false },
+      { id: '2', label: 'Email Address', type: 'email', required: true, readOnly: false },
+      { id: '3', label: 'Phone Number', type: 'tel', required: false, readOnly: false },
+      { id: '4', label: 'Relationship to School', type: 'select', required: false, readOnly: false, options: ['Parent', 'Alumni', 'Teacher', 'Community Member', 'Other'] },
+      { id: '5', label: 'Message of Support', type: 'text', required: false, readOnly: false },
+      { id: 'payment_amount', label: 'Contribution Amount (FCFA)', type: 'number', required: true, readOnly: false, min: 500 },
+      { id: 'phone_momo', label: 'MTN MoMo Phone Number', type: 'tel', required: true, readOnly: false, placeholder: '6XXXXXXXX' },
+      { id: 'phone_om', label: 'Orange Money Phone Number', type: 'tel', required: true, readOnly: false, placeholder: '6XXXXXXXX' }
+    ],
+    paymentMethods: ['momo', 'om', 'visa'],
+    formColors: { primary: '#10b981', secondary: '#34d399', text: '#064e3b', background: '#f0fdf4'
     },
-    {
-      name: "Payment",
-      fields: [
-        {
-          id: 'payment-method',
-          label: 'Payment Method',
-          type: 'select',
-          required: true,
-          options: event.paymentMethods?.map(method => ({
-            value: method,
-            label: method.toUpperCase()
-          })) || []
-        },
-        ...event.fields.filter(field => field.id.includes('payment-'))
-      ]
+    walletType: 'app_wallet',
+    fundraisingGoal: 500000,
+    deadline: '2024-12-31T23:59:59Z',
+    contributorMessage: 'Thank you so much for your generous contribution to our school library project! Your support means the world to our students and will help create a brighter future for education in our community. We will keep you updated on our progress.',
+    receiptConfig: {
+      includeFields: ['1', '2', 'payment_amount'],
+      includeQR: true,
+      additionalFields: {},
+      school: {
+        name: 'École Primaire de Yaoundé',
+        link: 'https://school-website.com',
+        contact: '+237 699 123 456',
+        logoUrl: '/public/A1.jpg',
+      },
+      layout: 'one',
+      align: 'left',
+    },
+    eventCard: {
+      image: '',
+      title: '',
+      description: ''
     }
-  ];
+  };
+};
 
-  const isFieldVisible = (field: any) => {
-    if (!field.conditional) return true;
-    const dependentValue = formData[field.conditional.fieldId];
-    return field.conditional.values.includes(dependentValue);
+const ContributorView: React.FC = () => {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  
+  // State management
+  const [eventData, setEventData] = useState<EventFormData | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [contributionData, setContributionData] = useState<any>(null);
+
+  // Load event data on mount
+  useEffect(() => {
+    if (slug) {
+      // Simulate API call
+      const mockData = getMockEventData(slug);
+      setEventData(mockData);
+    }
+  }, [slug]);
+
+  // Event type configuration
+  const eventTypeConfig = {
+    school: { icon: School, name: 'School Event', color: 'from-blue-500 to-indigo-600' },
+    wedding: { icon: Heart, name: 'Wedding', color: 'from-pink-500 to-rose-600' },
+    funeral: { icon: Flower2, name: 'Funeral', color: 'from-gray-500 to-slate-600' },
+    birthday: { icon: PartyPopper, name: 'Birthday', color: 'from-yellow-500 to-orange-600' },
+    business: { icon: Building2, name: 'Business', color: 'from-green-500 to-emerald-600' },
+    charity: { icon: Users, name: 'Charity', color: 'from-teal-500 to-cyan-600' },
+    conference: { icon: GraduationCap, name: 'Conference', color: 'from-purple-500 to-violet-600' },
+    other: { icon: Calendar, name: 'Other', color: 'from-gray-500 to-slate-600' }
   };
 
+  // Payment method configuration
+  const paymentMethodConfig = {
+    momo: { name: 'MTN MoMo', icon: <Smartphone className="w-5 h-5" />, color: 'from-yellow-400 to-yellow-600' },
+    om: { name: 'Orange Money', icon: <Smartphone className="w-5 h-5" />, color: 'from-orange-400 to-orange-600' },
+    visa: { name: 'Visa/Mastercard', icon: <CreditCard className="w-5 h-5" />, color: 'from-blue-400 to-blue-600' },
+    app_wallet: { name: 'App Wallet', icon: <Wallet className="w-5 h-5" />, color: 'from-purple-400 to-purple-600' }
+  };
+
+  if (!eventData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
+
+  const colors = eventData.formColors;
+  const eventTypeInfo = eventTypeConfig[eventData.eventType as keyof typeof eventTypeConfig];
+  const EventIcon = eventTypeInfo.icon;
+
+  // Form validation
   const validateStep = (step: number) => {
-    const newErrors: Record<string, string> = {};
-    steps[step].fields.forEach(field => {
-      if (field.required && !formData[field.id] && isFieldVisible(field)) {
-        newErrors[field.id] = `${field.label} is required`;
+    let newErrors: Record<string, string> = {};
+
+    if (step === 1) {
+      // Validate personal information fields
+      eventData.fields
+        .filter(field => !field.id.startsWith('payment_') && !field.id.startsWith('phone_'))
+        .forEach(field => {
+          if (field.required && !formValues[field.id]?.trim()) {
+            newErrors[field.id] = `${field.label} is required`;
+          }
+          
+          // Email validation
+          if (field.type === 'email' && formValues[field.id]) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(formValues[field.id])) {
+              newErrors[field.id] = 'Please enter a valid email address';
+            }
+          }
+          
+          // Phone validation
+          if (field.type === 'tel' && formValues[field.id]) {
+            const phoneRegex = /^[6-9]\d{8}$/;
+            if (!phoneRegex.test(formValues[field.id].replace(/\s+/g, ''))) {
+              newErrors[field.id] = 'Please enter a valid phone number';
+            }
+          }
+        });
+    } else if (step === 2) {
+      // Validate payment information
+      if (!selectedPaymentMethod) {
+        newErrors['paymentMethod'] = 'Please select a payment method';
       }
-    });
+      
+      const amountField = eventData.fields.find(f => f.id === 'payment_amount');
+      if (amountField && !formValues['payment_amount']) {
+        newErrors['payment_amount'] = 'Contribution amount is required';
+      } else if (amountField && formValues['payment_amount']) {
+        const amount = Number(formValues['payment_amount']);
+        if (amount < (amountField.min || 500)) {
+          newErrors['payment_amount'] = `Minimum contribution is ${amountField.min || 500} FCFA`;
+        }
+      }
+      
+      // Validate phone numbers for mobile money
+      if (selectedPaymentMethod === 'momo' && !formValues['phone_momo']) {
+        newErrors['phone_momo'] = 'MTN MoMo phone number is required';
+      }
+      if (selectedPaymentMethod === 'om' && !formValues['phone_om']) {
+        newErrors['phone_om'] = 'Orange Money phone number is required';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle form input changes
+  const handleInputChange = (fieldId: string, value: string) => {
+    setFormValues(prev => ({ ...prev, [fieldId]: value }));
+    // Clear error when user starts typing
+    if (errors[fieldId]) {
+      setErrors(prev => ({ ...prev, [fieldId]: '' }));
+    }
+  };
+
+  // Check if conditional field should be displayed
+  const shouldDisplayField = (field: FormField) => {
+    if (field.type !== 'conditional' || !field.condition) return true;
+    const targetValue = formValues[field.condition.fieldId];
+    return targetValue === field.condition.value;
+  };
+
+  // Handle step navigation
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
+      setCurrentStep(prev => prev + 1);
     }
   };
 
-  const handlePrev = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 0));
+  const handleBack = () => {
+    setCurrentStep(prev => prev - 1);
   };
 
-  const handleChange = (fieldId: string, value: any) => {
-    setFormData(prev => ({ ...prev, [fieldId]: value }));
-    if (errors[fieldId]) setErrors(prev => ({ ...prev, [fieldId]: "" }));
+  // Handle form submission
+  const handleSubmit = async () => {
+    if (!validateStep(2)) return;
+
+    setIsSubmitting(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Collect all contribution data
+    const contribution = {
+      eventSlug: slug,
+      eventType: eventData.eventType,
+      eventName: eventData.eventName,
+      contributorInfo: formValues,
+      paymentMethod: selectedPaymentMethod,
+      amount: formValues['payment_amount'],
+      timestamp: new Date().toISOString(),
+      receiptId: `RCP-${Date.now()}`
+    };
+    
+    setContributionData(contribution);
+    console.log('Contribution submitted:', contribution);
+    
+    setIsSubmitting(false);
+    setShowSuccess(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateStep(currentStep)){
-      if (currentStep < steps.length - 1) {
-        handleNext();
-      } else {
-        // Form submission logic here
-        console.log("Form submitted:", formData);
-      }
+  // Generate receipt download
+  const handleDownloadReceipt = () => {
+    // In real app, this would generate and download a PDF receipt
+    const { receiptConfig } = eventData;
+    if (!receiptConfig) {
+      console.warn('Receipt configuration is missing; cannot generate receipt.');
+      alert('Receipt configuration is missing; cannot generate receipt.');
+      return;
     }
+
+    const receiptData = {
+      ...contributionData,
+      school: receiptConfig.school,
+      fields: (receiptConfig.includeFields ?? []).map(fieldId => {
+        const field = eventData.fields.find(f => f.id === fieldId);
+        return {
+          label: field?.label,
+          value: formValues[fieldId]
+        };
+      })
+    };
+    
+    console.log('Receipt data:', receiptData);
+    alert('Receipt download started! (Simulated)');
   };
 
- 
-  const renderFieldInput = (field: FormField) => {
-  const hasDefaultValue = field.defaultValue !== undefined;
-  const isFixed = hasDefaultValue || field.fixedValue;
-  const value = hasDefaultValue ? field.defaultValue : formData[field.id] || '';
-
-  const commonProps = {
-    value: value,
-    className: `w-full p-3 border rounded-lg ${isFixed ? 'bg-gray-100 cursor-not-allowed' : ''}`,
-    required: field.required,
-    disabled: field.readOnly,
-    placeholder: field.label,
-    readOnly: field.readOnly,
-  };
-
-  switch(field.type) {
-    case 'file': // ADD FILE INPUT CASE
-      return (
-        <div className="space-y-2">
-          <input
-            type="file"
-            accept={field.accept || '*'}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                handleChange(field.id, file);
-                
-                // Preview the image if it's an image file
-                if (file.type.startsWith('image/')) {
-                  const reader = new FileReader();
-                  reader.onload = (e) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      [`${field.id}-preview`]: e.target?.result
-                    }));
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }
+  // Render form field
+  const renderField = (field: FormField) => {
+    if (!shouldDisplayField(field)) return null;
+    
+    const hasError = errors[field.id];
+    
+    return (
+      <motion.div
+        key={field.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-2"
+      >
+        <label 
+          className="block text-sm font-medium"
+          style={{ color: colors.text }}
+        >
+          {field.label}
+          {field.required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        
+        {field.type === 'select' ? (
+          <select
+            className={`w-full p-3 border-2 rounded-xl transition-all focus:ring-4 ${
+              hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'focus:ring-opacity-20'
+            }`}
+            style={{ 
+              borderColor: hasError ? undefined : colors.secondary,
             }}
-            className="w-full p-2 border rounded-lg"
+            value={formValues[field.id] || ''}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+          >
+            <option value="">Select {field.label.toLowerCase()}...</option>
+            {field.options?.map(option => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type={field.type}
+            className={`w-full p-3 border-2 rounded-xl transition-all focus:ring-4 ${
+              hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'focus:ring-opacity-20'
+            }`}
+            style={{ 
+              borderColor: hasError ? undefined : colors.secondary,
+            }}
+            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+            value={formValues[field.id] || ''}
+            onChange={(e) => handleInputChange(field.id, e.target.value)}
+            min={field.type === 'number' ? field.min : undefined}
+            max={field.type === 'number' ? field.max : undefined}
+            readOnly={field.readOnly}
           />
-          {formData[`${field.id}-preview`] && (
-            <div className="mt-2">
-              <img 
-                src={formData[`${field.id}-preview`]} 
-                alt="Preview" 
-                className="w-20 h-20 object-cover rounded-lg border"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    [field.id]: null,
-                    [`${field.id}-preview`]: null
-                  }));
-                }}
-                className="mt-1 text-sm text-red-600"
-              >
-                Remove
-              </button>
-            </div>
-          )}
-        </div>
-      );
-       case 'select':
-         return (
-           <div className="relative">
-             <select 
-               {...commonProps}
-               onChange={(e) => !isFixed && handleChange(field.id, e.target.value)}
-             >
-               <option value="">Select an option</option>
-               {field.options?.map(opt => (
-                 <option key={opt} value={opt}>{opt}</option>
-               ))}
-             </select>
-             {isFixed && (
-               <FiLock 
-                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                 size={16}
-               />
-             )}
-           </div>
-         );
-       case 'radio':
-       case 'checkbox':
-         return (
-           <div className="space-y-2">
-             {field.options?.map(opt => (
-               <label key={opt} className="flex items-center space-x-2">
-                 <input
-                   type={field.type}
-                   name={field.id}
-                   value={opt}
-                   checked={value === opt}
-                   onChange={(e) => !isFixed && handleChange(field.id, e.target.value)}
-                   className={`h-4 w-4 ${isFixed ? 'cursor-not-allowed' : ''}`}
-                   disabled={isFixed || field.readOnly}
-                 />
-                 <span>{opt}</span>
-                 {isFixed && <FiLock className="text-gray-400 ml-1" size={14} />}
-               </label>
-             ))}
-           </div>
-         );
-       default:
-         return (
-           <div className="relative">
-             <input
-             key={field.id}
-               type={field.type}
-               {...commonProps}
-               onChange={(e) => !isFixed && handleChange(field.id, e.target.value)}
-               min={field.type === 'number' ? field.min : undefined}
-               max={field.type === 'number' ? field.max : undefined}
-             />
-             {isFixed && (
-               <FiLock 
-                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                 size={16}
-               />
-             )}
-           </div>
-         );
-     }
-   };
-
-  const getPaymentMethodIcon = (method: PaymentMethod) => {
-    switch(method) {
-      case 'momo': return <FiSmartphone className="text-2xl" />;
-      case 'om': return <FiPhone className="text-2xl" />;
-      case 'bank': return <FiCreditCard className="text-2xl" />;
-      default: return <FiDollarSign className="text-2xl" />;
-    }
+        )}
+        
+        {hasError && (
+          <motion.p 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-red-500 text-sm flex items-center space-x-1"
+          >
+            <AlertCircle className="w-4 h-4" />
+            <span>{hasError}</span>
+          </motion.p>
+        )}
+      </motion.div>
+    );
   };
 
   return (
-    <div className="w-full h-full flex justify-center items-center">
-      <div 
-      style={{backgroundColor: event.theme.bgColor}}
-      className="md:w-xl md:mx-auto p-6 w-[90%] text-gray-700 rounded-lg shadow-lg">
+    <div 
+      className="min-h-screen py-8 px-4"
+      style={{ backgroundColor: colors.background }}
+    >
+      <div className="max-w-2xl mx-auto">
         {/* Event Header */}
-        {(event.title||event.description!='') &&(
-          <div 
-            className="p-3 rounded-xl mb-5  shadow-md"
-            style={{ 
-              backgroundColor: event.theme.secondaryColor,
-              borderColor: event.theme.primaryColor
-            }}
-          >
-            <h2 className="text-2xl text-center font-bold mb-2" style={{ color: event.theme.primaryColor }}>
-              {event.title}
-            </h2>
-            <p className="text-gray-600">{event.description}</p>
-          
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          {/* Event Type Badge */}
+          <div className="flex justify-center mb-4">
+            <div 
+              className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-gradient-to-r ${eventTypeInfo.color} text-white shadow-lg`}
+            >
+              <EventIcon className="w-5 h-5" />
+              <span className="font-medium">{eventTypeInfo.name}</span>
+            </div>
           </div>
-        )}
+          
+          <h1 
+            className="text-3xl md:text-4xl font-bold mb-4"
+            style={{ color: colors.primary }}
+          >
+            {eventData.eventTitle || eventData.eventName}
+          </h1>
+          
+          {eventData.eventDescription && (
+            <p 
+              className="text-lg leading-relaxed max-w-xl mx-auto"
+              style={{ color: colors.text }}
+            >
+              {eventData.eventDescription}
+            </p>
+          )}
+        </motion.div>
 
-        {/* Step Indicator */}
-        <div className="flex justify-between mb-8">
-          {steps.map((step, index) => (
-            <div key={step.name} className="flex flex-col items-center">
+        {/* Form Container */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-xl p-8"
+        >
+          {/* Step Indicator */}
+          <div className="flex items-center justify-center mb-8 space-x-4">
+            <div className="flex items-center space-x-3">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center 
-                  ${currentStep >= index ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'}`}
-                style={{ backgroundColor: currentStep >= index ? event.theme.primaryColor : undefined }}
+                className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-semibold transition-all ${
+                  currentStep >= 1 ? 'shadow-lg' : ''
+                }`}
+                style={{ backgroundColor: currentStep >= 1 ? colors.primary : colors.secondary + '50' }}
               >
-                {index + 1}
+                1
               </div>
-              <span className={`text-xs mt-1 ${currentStep >= index ? 'font-medium' : 'text-gray-500'}`}>
-                {step.name}
+              <span className="text-sm font-medium" style={{ color: colors.text }}>
+                Information
               </span>
             </div>
-          ))}
-        </div>
+            
+            <div 
+              className="w-16 h-1 rounded-full transition-all"
+              style={{ backgroundColor: currentStep >= 2 ? colors.primary : colors.secondary + '30' }}
+            />
+            
+            <div className="flex items-center space-x-3">
+              <div
+                className={`w-10 h-10 flex items-center justify-center rounded-full text-white font-semibold transition-all ${
+                  currentStep >= 2 ? 'shadow-lg' : ''
+                }`}
+                style={{ backgroundColor: currentStep >= 2 ? colors.primary : colors.secondary + '50' }}
+              >
+                2
+              </div>
+              <span className="text-sm font-medium" style={{ color: colors.text }}>
+                Payment
+              </span>
+            </div>
+          </div>
 
-        <form onSubmit={handleSubmit} className="">
-          <AnimatePresence mode="wait">
+          {/* Step 1: Personal Information */}
+          {currentStep === 1 && (
             <motion.div
-              key={currentStep}
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 50 }}
+              className="space-y-6"
+            >
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold mb-2" style={{ color: colors.primary }}>
+                  📝 Your Information
+                </h3>
+                <p className="text-sm opacity-70" style={{ color: colors.text }}>
+                  Please fill in your details below
+                </p>
+              </div>
+
+              {eventData.fields
+                .filter(field => !field.id.startsWith('payment_') && !field.id.startsWith('phone_'))
+                .map(field => renderField(field))}
+            </motion.div>
+          )}
+
+          {/* Step 2: Payment Details */}
+          {currentStep === 2 && (
+            <motion.div
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
+              className="space-y-6"
             >
-              {/* Event Details Step */}
-              {currentStep === 0 && steps[0].fields
-                .filter(field => isFieldVisible(field as FormField))
-                .map(field => (
-                  <div key={field.id} className="mb-6">
-                    <label className="block font-medium mb-1">
-                      {field.label}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </label>
-                    {renderFieldInput(field as FormField)}
-                    {errors[field.id] && (
-                      <p className="text-red-500 text-sm mt-1">{errors[field.id]}</p>
-                    )}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold mb-2" style={{ color: colors.primary }}>
+                  💳 Payment Details
+                </h3>
+                <p className="text-sm opacity-70" style={{ color: colors.text }}>
+                  Choose your payment method and enter the amount
+                </p>
+              </div>
+
+              {/* Contribution Amount */}
+              {eventData.fields
+                .filter(field => field.id === 'payment_amount')
+                .map(field => renderField(field))}
+
+              {/* Payment Method Selection */}
+              <div className="space-y-3">
+                <label 
+                  className="block text-sm font-medium"
+                  style={{ color: colors.text }}
+                >
+                  Select Payment Method <span className="text-red-500">*</span>
+                </label>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  {eventData.paymentMethods.map(method => {
+                    const methodInfo = paymentMethodConfig[method as keyof typeof paymentMethodConfig];
+                    const isSelected = selectedPaymentMethod === method;
                     
-                    {/* Add image preview for file fields
-                    {field.type === 'file' && formData[field.id] && (
-                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-green-600">
-                          ✓ Image ready for upload
-                        </p>
-                      </div>
-                    )} */}
-                  </div>
-                ))}
-
-              {/* Payment Step */}
-              {currentStep === 1 && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">
-                      Select Payment Method
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      {event.paymentMethods?.map(method => (
-                        <button
-                          key={method}
-                          type="button"
-                          onClick={() => handleChange('payment-method', method)}
-                          className={`p-3 border-2 rounded-lg flex flex-col items-center transition-all
-                            ${formData['payment-method'] === method
-                              ? 'border-purple-600 bg-purple-50'
-                              : 'border-gray-200 hover:border-purple-300'}`}
-                        >
-                          {getPaymentMethodIcon(method)}
-                          <span className="mt-2 font-medium">
-                            {method.toUpperCase()}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Payment-specific fields */}
-                  <AnimatePresence>
-                    {steps[1].fields
-                      .filter(field => field.id !== 'payment-method' && isFieldVisible(field as FormField))
-                      .map(field => (
-                        <motion.div
-                          key={field.id}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden mb-4"
-                        >
-                          <label className="block font-medium mb-1">
-                            {field.label}
-                            {field.required && <span className="text-red-500 ml-1">*</span>}
-                          </label>
-                          {renderFieldInput(field as FormField)}
-                          {errors[field.id] && (
-                            <p className="text-red-500 text-sm mt-1">{errors[field.id]}</p>
-                          )}
-                        </motion.div>
-                      ))}
-                  </AnimatePresence>
-
-                  {/* Security Assurance */}
-                  <div className="p-4 bg-gray-100 rounded-lg flex items-start">
-                    <FiShield className="text-purple-600 mt-1 mr-3 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-medium">Secure Payment</h4>
-                      <p className="text-sm text-gray-600">
-                        Your payment information is encrypted and processed securely.
-                      </p>
-                    </div>
-                  </div>
+                    return (
+                      <motion.div
+                        key={method}
+                        onClick={() => setSelectedPaymentMethod(method)}
+                        className={`flex items-center space-x-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          isSelected ? 'shadow-lg ring-4 ring-opacity-20' : 'hover:shadow-md'
+                        }`}
+                        style={{
+                          borderColor: isSelected ? colors.primary : colors.secondary,
+                          backgroundColor: isSelected ? colors.primary + '10' : 'transparent',
+                          ...(isSelected ? ({ ['--tw-ring-color' as any]: colors.primary + '33' } as React.CSSProperties) : {}),
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${methodInfo.color} flex items-center justify-center text-white shadow-md`}>
+                          {methodInfo.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold" style={{ color: colors.text }}>
+                            {methodInfo.name}
+                          </div>
+                        </div>
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="w-6 h-6 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: colors.primary }}
+                          >
+                            <CheckCircle className="w-4 h-4 text-white" />
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    );
+                  })}
                 </div>
-              )}
+                
+                {errors['paymentMethod'] && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-red-500 text-sm flex items-center space-x-1"
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{errors['paymentMethod']}</span>
+                  </motion.p>
+                )}
+              </div>
+
+              {/* Phone Number Fields for Mobile Money */}
+              <AnimatePresence>
+                {selectedPaymentMethod && (selectedPaymentMethod === 'momo' || selectedPaymentMethod === 'om') && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="space-y-4"
+                  >
+                    {eventData.fields
+                      .filter(field => 
+                        (selectedPaymentMethod === 'momo' && field.id === 'phone_momo') ||
+                        (selectedPaymentMethod === 'om' && field.id === 'phone_om')
+                      )
+                      .map(field => renderField(field))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
-          </AnimatePresence>
+          )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            {currentStep > 0 ? (
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="flex items-center px-4 py-2 text-purple-600 hover:bg-purple-50 rounded-lg"
+          <div className="flex justify-between items-center mt-8 pt-6 border-t" style={{ borderColor: colors.secondary + '30' }}>
+            {currentStep > 1 ? (
+              <motion.button
+                onClick={handleBack}
+                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all hover:shadow-md"
+                style={{ 
+                  backgroundColor: colors.secondary + '20',
+                  color: colors.text
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <FiChevronLeft className="mr-1" />
-                Previous
-              </button>
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+              </motion.button>
             ) : (
               <div></div>
             )}
-
-            <button
-              type="submit"
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg font-medium flex items-center shadow-md hover:shadow-lg transition-shadow"
-            >
-              {currentStep < steps.length - 1 ? (
-                <>
-                  Continue to Payment <FiChevronRight className="ml-1" />
-                </>
-              ) : (
-                <>
-                  Pay Now <FiDollarSign className="ml-1" />
-                </>
-              )}
-            </button>
+            
+            {currentStep < 2 ? (
+              <motion.button
+                onClick={handleNext}
+                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium text-white transition-all shadow-lg hover:shadow-xl"
+                style={{ backgroundColor: colors.primary }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <span>Next</span>
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
+            ) : (
+              <motion.button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex items-center space-x-2 px-8 py-3 rounded-xl font-medium text-white transition-all shadow-lg hover:shadow-xl disabled:opacity-50"
+                style={{ backgroundColor: '#10b981' }}
+                whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5" />
+                    <span>Submit Contribution</span>
+                  </>
+                )}
+              </motion.button>
+            )}
           </div>
-        </form>
+        </motion.div>
       </div>
+
+      {/* Success Modal */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white rounded-2xl p-8 w-full max-w-lg shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <div className="text-center">
+                <motion.div
+                  className="w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                >
+                  <CheckCircle className="w-10 h-10 text-white" />
+                </motion.div>
+                
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">🎉 Thank You!</h3>
+                
+                <div className="text-gray-600 mb-6 leading-relaxed">
+                  {eventData.contributorMessage}
+                </div>
+
+                <div className="space-y-4">
+                  {/* Download Receipt for School Events */}
+                  {eventData.eventType === 'school' && (
+                    <motion.button
+                      onClick={handleDownloadReceipt}
+                      className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Download className="w-5 h-5" />
+                      <span>Download Receipt</span>
+                    </motion.button>
+                  )}
+
+                  {/* Join Application Link */}
+                  <motion.button
+                    onClick={() => navigate('/signup')}
+                    className="w-full flex items-center justify-center space-x-2 px-6 py-3 border-2 border-purple-600 text-purple-600 rounded-xl hover:bg-purple-50 transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                    <span>Create Your Own Event</span>
+                  </motion.button>
+
+                  <button
+                    onClick={() => setShowSuccess(false)}
+                    className="w-full py-3 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

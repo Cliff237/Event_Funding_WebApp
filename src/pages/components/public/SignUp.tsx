@@ -1,8 +1,9 @@
 import { useState, useRef, type ChangeEvent, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaLock, FaCamera, FaCheck,  FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {toast} from 'react-toastify';
+import axios from 'axios';
 
 const SignUp = () => {
   // Form state
@@ -18,7 +19,7 @@ const SignUp = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentError, setCurrentError] = useState<string>('');
-
+  const navigate = useNavigate();
   // Clear errors after 3 seconds
   useEffect(() => {
     if (Object.keys(errors).length > 0 || currentError) {
@@ -115,12 +116,13 @@ const SignUp = () => {
 
   };
 
-  // Form submission
+
+  // inside your SignUp component
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
+  
     try {
-      // Prepare form data for backend
       const data = new FormData();
       data.append('name', formData.name);
       data.append('email', formData.email);
@@ -128,30 +130,45 @@ const SignUp = () => {
       if (fileInputRef.current?.files?.[0]) {
         data.append('profile', fileInputRef.current.files[0]);
       }
-
-      const response = await fetch('http://localhost:5000/api/auth/signup', {
-        method: 'POST',
-        body: data,
+  
+      const response = await axios.post('http://localhost:5000/api/auth/signup', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.message || 'Something went wrong');
-        setCurrentError(result.message || 'Something went wrong');
-        return;
-      }
-
+  
       // Success
-      console.log('Signup successful:', result);
-      alert('Account created successfully!');
-      // Optionally redirect to login page
-      // navigate('/login');
-    } catch (err: any) {
-      console.error(err);
-      setCurrentError('Server error. Please try again later.');
+      console.log('Signup successful:', response.data);
+      toast.success('Account created successfully!');
+      
+      // Optionally store token in localStorage
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+  
+      // Redirect to login or dashboard
+      // navigate('/logIn');
+      
+      const result = response.data;
+      if (result.user.role === 'SUPER_ADMIN') {
+        navigate("/superAdmin/overview");
+      } else if (result.user.role === 'ORGANIZER' || result.user.role === 'SCHOOL_ADMIN') {
+        navigate("/overview");
+      }
+  
+  
+    } catch (error: any) {
+      console.error(error);
+      if (error.response?.data?.message) {
+        setCurrentError(error.response.data.message);
+        toast.error(error.response.data.message);
+      } else {
+        setCurrentError('Server error. Please try again later.');
+        toast.error('Server error. Please try again later.');
+      }
     }
   };
+  
 
   // Animation variants
   const containerVariants = {

@@ -1,14 +1,6 @@
-// src/middleware/authenticate.ts
-import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-interface JwtPayload {
-  id: number;
-  role: string;
-  email: string;
-}
-
-export const authenticate = (req: any, res: Response, next: NextFunction) => {
+export const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "No token provided" });
@@ -17,7 +9,7 @@ export const authenticate = (req: any, res: Response, next: NextFunction) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded; // Attach user info to request
     next();
   } catch {
@@ -26,8 +18,8 @@ export const authenticate = (req: any, res: Response, next: NextFunction) => {
 };
 
 // Role check middleware
-export const authorizeRoles = (...roles: string[]) => {
-  return (req: any, res: Response, next: NextFunction) => {
+export const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ message: "Access denied" });
     }

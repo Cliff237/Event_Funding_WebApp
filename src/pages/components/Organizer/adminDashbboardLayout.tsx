@@ -1,15 +1,13 @@
 import { Outlet } from "react-router-dom"
-import LeftSideBar from "./LeftSideBar"
+import DashboardLayout from "./DashboardLayout"
 
 function AdminDashbboardLayout() {
   return (
-    <div className="h-screen w-full flex ">
-        {/* left side bar */}
-        <LeftSideBar/>
-      <section className=" h-fit  bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-100 w-full pt-15 md:pt-0">
+    <DashboardLayout>
+      <div className="h-full overflow-y-auto w-full bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-100 overflow-x-hidden">
         <Outlet/>
-      </section>
-    </div>
+      </div>
+    </DashboardLayout>
   )
 }
 

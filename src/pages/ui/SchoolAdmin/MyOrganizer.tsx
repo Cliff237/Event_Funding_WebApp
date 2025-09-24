@@ -1,6 +1,11 @@
-import  { useState } from 'react';
-import { Search, MoreHorizontal, Edit,Eye, Mail, User, UserPlus } from 'lucide-react';
+import  { useEffect, useState, type ChangeEvent } from 'react';
+import { Search,  Edit,Eye, Mail, User, UserPlus, Trash } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
+import Modal from '../../components/Organizer/Modal';
+import { FaCheck, FaEye } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import apiRequest from '../../../utils/apiRequest';
+import { jwtDecode } from 'jwt-decode';
 
 type Role = 'SCHOOL_ADMIN' | 'ORGANIZER';
 type Status = 'active' | 'inactive';
@@ -24,62 +29,141 @@ interface AppUser {
   lastLogin: string;
 }
 
+interface DecodedToken {
+  id: number;
+  name: string;
+  role: string;
+  exp: number;
+}
 
 const MyOrganizers = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
   const [sortBy, setSortBy] = useState<SortableKey>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showModel, setShowModel] = useState(false)
+  const [showShareModel, setShowShareModel] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMode, setConfirmMode] = useState<'single' | 'bulk'>('single');
+  const [pendingId, setPendingId] = useState<number | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [organizerData, setOrganizerData]= useState({
+    name:'',
+    email:'',
+    password:''
+  });
+  const handleInputChange =(e:ChangeEvent<HTMLInputElement>)=>{
+    const {name,value} = e.target
+    setOrganizerData({
+      ...organizerData,[name]:value
+    });
+  }
 
-  // Mock users data based on your User model
-  const [users, setUsers] = useState<AppUser[]>([
-    {
-      id: 1,
-      name: "Marie Dubois",
-      email: "marie.dubois@lycee-yaounde.edu.cm",
-      role: "SCHOOL_ADMIN",
-      profile: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marie",
-      schoolId: 1,
-      school: { name: "Lycée Bilingue de Yaoundé", id: 1 },
-      eventsCount: 12,
-      status: "active",
-      createdAt: "2024-01-15T10:30:00Z",
-      updatedAt: "2024-09-01T14:20:00Z",
-      lastLogin: "2024-09-03T09:15:00Z"
-    },
-    {
-      id: 2,
-      name: "Jean Kamga",
-      email: "jean.kamga@gmail.com",
-      role: "ORGANIZER",
-      profile: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jean",
-      schoolId: null,
-      school: null,
-      eventsCount: 8,
-      status: "active",
-      createdAt: "2024-02-20T08:45:00Z",
-      updatedAt: "2024-08-28T16:30:00Z",
-      lastLogin: "2024-09-02T11:45:00Z"
-    },
-    {
-      id: 3,
-      name: "Sarah Mballa",
-      email: "sarah.mballa@college-douala.edu.cm",
-      role: "SCHOOL_ADMIN",
-      profile: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-      schoolId: 2,
-      school: { name: "Collège Français de Douala", id: 2 },
-      eventsCount: 15,
-      status: "active",
-      createdAt: "2024-03-10T12:15:00Z",
-      updatedAt: "2024-09-01T10:45:00Z",
-      lastLogin: "2024-09-04T08:30:00Z"
+  const deleteOrganizer = async (organizerId: number) => {
+    if (!adminId) return;
+    try {
+      await apiRequest(`/api/school-admin/${adminId}/organizers/${organizerId}`, { method: 'DELETE' });
+      setUsers(prev => {
+        const updated = prev.filter(u => u.id !== organizerId);
+        // Adjust pagination if needed
+        const filtered = updated.filter(user => {
+          const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                (user.school?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+          return matchesSearch;
+        });
+        const newTotalPages = Math.ceil(filtered.length / itemsPerPage) || 1;
+        if (currentPage > newTotalPages) setCurrentPage(newTotalPages);
+        return updated;
+      });
+      setSelectedUsers(prev => prev.filter(id => id !== organizerId));
+      toast.success('Organizer deleted');
+    } catch (e: any) {
+      const msg = e?.error || e?.message || 'Failed to delete organizer';
+      toast.error(msg);
     }
-  ]);
+  };
 
+  const bulkDeleteOrganizers = async () => {
+    if (!adminId) return;
+    if (selectedUsers.length === 0) return;
+    try {
+      await apiRequest(`/api/school-admin/${adminId}/organizers`, {
+        method: 'DELETE',
+        data: { ids: selectedUsers },
+      });
+      setUsers(prev => prev.filter(u => !selectedUsers.includes(u.id)));
+      setSelectedUsers([]);
+      // Adjust pagination if needed
+      const newFilteredCount = filteredUsers.length - selectedUsers.length;
+      const newTotalPages = Math.ceil(Math.max(0, newFilteredCount) / itemsPerPage) || 1;
+      if (currentPage > newTotalPages) setCurrentPage(newTotalPages);
+      toast.success('Selected organizers deleted');
+    } catch (e: any) {
+      const msg = e?.error || e?.message || 'Failed to delete selected organizers (some may have events)';
+      toast.error(msg);
+    }
+  };
+
+  const openConfirmSingle = (id: number) => {
+    setPendingId(id);
+    setConfirmMode('single');
+    setConfirmOpen(true);
+  };
+
+  const openConfirmBulk = () => {
+    if (selectedUsers.length === 0) return;
+    setPendingId(null);
+    setConfirmMode('bulk');
+    setConfirmOpen(true);
+  };
+
+  const onConfirmDelete = async () => {
+    if (confirmMode === 'single' && pendingId != null) {
+      await deleteOrganizer(pendingId);
+    } else if (confirmMode === 'bulk') {
+      await bulkDeleteOrganizers();
+    }
+    setConfirmOpen(false);
+    setPendingId(null);
+  };
+
+  // Users managed by this school admin (fetched from backend)
+  const [users, setUsers] = useState<AppUser[]>([]);
+  const [adminId, setAdminId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // decode school admin id from JWT
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      setAdminId(decoded.id);
+    } catch (err) {
+      console.error('Failed to decode token', err);
+    }
+  }, []);
+
+  const fetchOrganizers = async () => {
+    if (!adminId) return;
+    setLoading(true);
+    try {
+      const data = await apiRequest<AppUser[]>(`/api/school-admin/${adminId}/organizers`, { method: 'GET' });
+      setUsers(data);
+    } catch (e) {
+      console.error('Failed to fetch organizers', e);
+      toast.error('Failed to load organizers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrganizers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminId]);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(users.length / itemsPerPage);
@@ -90,8 +174,7 @@ const MyOrganizers = () => {
       const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            (user.school?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      return matchesSearch ;
     })
     .sort((a, b) => {
       const getSortValue = (u: AppUser): string | number | Date => {
@@ -166,7 +249,29 @@ const MyOrganizers = () => {
       transition: { type: "spring", stiffness: 100
       }
     }
-  }satisfies Variants;
+  } satisfies Variants;
+
+  const handleSubmit = async (e:React.FormEvent)=>{
+    e.preventDefault();
+    if (!adminId) return;
+    try {
+      await apiRequest(`/api/school-admin/${adminId}/organizers`, {
+        method: 'POST',
+        data: {
+          name: organizerData.name,
+          email: organizerData.email,
+          password: organizerData.password,
+        },
+      });
+      toast.success(`${organizerData.name} organizer created`);
+      setShowModel(false);
+      setOrganizerData({ name: '', email: '', password: '' });
+      fetchOrganizers();
+    } catch (err: any) {
+      const msg = err?.error || err?.message || 'Failed to create organizer';
+      toast.error(msg);
+    }
+  }
 
   return (
     <div className="h-screen w-full overflow-y-scroll  overflow-x-hidden p-6">
@@ -182,7 +287,9 @@ const MyOrganizers = () => {
             <p className="text-gray-600 mt-1">Manage Your Organizers.</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 bg-p text-white rounded-lg bg-gradient-to-r from-purple-800 to-indigo-800 hover:cursor-pointer flex items-center gap-2">
+            <button 
+            onClick={()=>{setShowModel(true)}}
+            className="px-4 py-2 bg-p text-white rounded-lg bg-gradient-to-r from-purple-800 to-indigo-800 hover:cursor-pointer flex items-center gap-2">
               <UserPlus className="h-4 w-4" />
               Add Organizer
             </button>
@@ -197,7 +304,7 @@ const MyOrganizers = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search by name, email, or school..."
+              placeholder="Search by name, email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -205,16 +312,6 @@ const MyOrganizers = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as 'all' | Status)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-
             <select
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
@@ -248,8 +345,8 @@ const MyOrganizers = () => {
               <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
                 Activate
               </button>
-              <button className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
-                Deactivate
+              <button onClick={openConfirmBulk} className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+                Delete Selected
               </button>
             </div>
           </div>
@@ -277,7 +374,7 @@ const MyOrganizers = () => {
                   Name/Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Events
+                  #Events
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -300,6 +397,7 @@ const MyOrganizers = () => {
                       onChange={() => handleSelectUser(user.id)}
                       className="h-4 w-4 text-purple-600 rounded border-gray-300"
                     />
+                    <span className='ml-2.5'>{user.id}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -336,11 +434,9 @@ const MyOrganizers = () => {
                       <button className="p-1 text-gray-400 hover:text-purple-600 transition-colors">
                         <Mail className="h-4 w-4" />
                       </button>
-                      <div className="relative">
-                        <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </div>
+                      <button onClick={() => openConfirmSingle(user.id)} className="p-1 text-gray-400 hover:text-red-600 transition-colors">
+                        <Trash className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -360,8 +456,12 @@ const MyOrganizers = () => {
                   <User className="h-12 w-12 text-white " />
                 </div>
               </span>
-              <p className="text-center text-gray-500">No users found</p>
-              <button className="mt-4 px-4 py-2 rounded-lg text-white bg-gradient-to-br from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 transition-colors">Add New User</button>
+              <p className="text-center text-gray-500">No Organizers found😢</p>
+              <button 
+              onClick={()=>{setShowModel(true)}}
+              className="mt-4 px-4 py-2 rounded-lg text-white bg-gradient-to-br from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 transition-colors">
+                Add Organizer  
+              </button>
             </motion.div> 
           )}
         </div>
@@ -411,6 +511,111 @@ const MyOrganizers = () => {
           </div>
         </div>
       </div>
+
+      {showModel &&(
+        <Modal
+        isOpen={showModel} onClose={()=>setShowModel(false)}
+        >
+          <form onSubmit={handleSubmit}>
+            <motion.div variants={itemVariants} className='mb-3'>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Organizer Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="text-gray-400" />
+                </div>
+                <input
+                  required
+                  type="text"
+                  id="name"
+                  name='name'
+                  value={organizerData.name}
+                  onChange={handleInputChange}
+                  className={`pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  placeholder="Organizer name"
+                />
+              </div>
+            </motion.div>
+            <motion.div variants={itemVariants} className='mb-3'>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Organizer Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="text-gray-400" />
+                </div>
+                <input
+                  required
+                  type="email"
+                  id="email"
+                  name='email'
+                  value={organizerData.email}
+                  onChange={handleInputChange}
+                  className={`pl-10 w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  placeholder="organizer@example.com"
+                />
+              </div>
+            </motion.div>
+            <motion.div variants={itemVariants} className='mb-2'>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <div className="relative ">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <FaEye className="text-gray-400" />
+                </div>
+                <input
+                  required
+                  type="password"
+                  id="password"
+                  name='password'
+                  value={organizerData.password}
+                  onChange={handleInputChange}
+                  className={`pl-10  w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  placeholder="...."
+                />
+              </div>
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <button
+                type="submit"
+                className="w-full bg-purple-700 hover:bg-purple-800 text-white font-medium py-2 px-4 rounded-lg transition-time flex items-center justify-center"
+              >
+                <FaCheck className="mr-2" /> Create Organizer
+              </button>
+            </motion.div>
+          </form>
+        </Modal>
+      )}
+
+      {confirmOpen && (
+        <Modal isOpen={confirmOpen} onClose={() => setConfirmOpen(false)}>
+          <div className="p-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Deletion</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {confirmMode === 'single'
+                ? 'Are you sure you want to delete this organizer? This action cannot be undone.'
+                : `Are you sure you want to delete ${selectedUsers.length} selected organizer(s)? This action cannot be undone.`}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirmDelete}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
     </div>
   );
 };

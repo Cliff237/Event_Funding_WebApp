@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaEnvelope, FaLock, FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 const LoginPage = () => {
   // Form state
@@ -13,6 +15,7 @@ const LoginPage = () => {
   
   const [currentError, setCurrentError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   // Clear error after 3 seconds
   useEffect(() => {
@@ -61,47 +64,49 @@ const LoginPage = () => {
   };
 
 // Form submission
+
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  if (validateForm()) {
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+  if (!validateForm()) return;
 
-      const result = await response.json();
+  setIsLoading(true);
+  try {
+    const response = await axios.post('http://localhost:5000/api/auth/login', {
+      email: formData.email,
+      password: formData.password
+    });
 
-      if (!response.ok) {
-        setCurrentError('Invalid email or password');
-      } else {
-        console.log('Login successful:', result);
-        // You can save JWT token or user info here, for example:
-        // localStorage.setItem('token', result.token);
-        // Redirect to dashboard
-        if (result.user.role === "SUPER_ADMIN") {
-            // navigate("/super-admin-dashboard");
-            console.log("Super Admin logged in");
-            
-          } else if (result.user.role === "ORGANIZER") {
-            // navigate("/organizer-dashboard");
-          }
-      }
-    } catch (error) {
-      setCurrentError('Server error, please try again later');
-    } finally {
-      setIsLoading(false);
+    const result = response.data;
+
+    console.log('Login successful:', result);
+    toast.success('Login successful!');
+
+    // Save JWT token for protected routes
+    localStorage.setItem('token', result.token);
+    localStorage.setItem('user', JSON.stringify(result.user));
+
+    // Redirect based on role
+    if (result.user.role === 'SUPER_ADMIN') {
+      toast.success('Welcome Super Admin!');
+      navigate("/superAdmin/overview");
+    } else if (result.user.role === 'ORGANIZER'|| result.user.role === 'SCHOOL_ORGANIZER' || result.user.role === 'SCHOOL_ADMIN') {
+      toast.success('Welcome Organizer!');
+      navigate("/overview");
     }
+
+  } catch (error: any) {
+    console.error(error);
+    if (error.response) {
+      setCurrentError(error.response.data.message || 'Invalid email or password');
+    } else {
+      setCurrentError('Server error. Please try again later.');
+    }
+  } finally {
+    setIsLoading(false);
   }
 };
+
 
 
   return (

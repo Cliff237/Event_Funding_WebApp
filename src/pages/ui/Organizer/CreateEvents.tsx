@@ -1,19 +1,27 @@
-import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Building2, Calendar, Flower2, GraduationCap, Heart, PartyPopper, School, Users } from "lucide-react";
+import { motion, type Variants, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight, Building2, Calendar, Flower2, GraduationCap, Heart, PartyPopper, School, Users, CheckCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { EventType,EventFormData, SchoolInfo } from "../../components/Organizer/Events/type";
+import type { EventType,EventFormData, SchoolInfo, SchoolRequest } from "../../components/Organizer/Events/type";
 import Modal from "../../components/Organizer/Modal";
 import CreateCustomeEventFields from "../../components/Organizer/Events/CreateCustomeEventFields";
 import CreateFormCustomization from "../../components/Organizer/Events/CreateFormCustomization";
 import CreateFinalConfiguration from "./CreateFinalConfiguration";
 import CreateReceiptCustomization from "./CreateReceiptCustomization";
+import AddSchoolModal from "../../components/Organizer/AddSchoolModal";
 
 function CreateEvents() {
   const [showSchoolModal, setShowSchoolModal] = useState(false);
+  const [showAddSchoolModal, setShowAddSchoolModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); 
   const [eventNameError, setEventNameError] = useState('');
   const [goalError, setGoalError] = useState('');
   const [deadlineError, setDeadlineError] = useState('');
+  
+  // Share and confirmation states for non-school events
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [ShareModalCard, setShowShareModalCard] = useState(false);
+  
   const [SchoolData, setSchoolData] = useState({
     name: '',
     password: '',
@@ -21,6 +29,17 @@ function CreateEvents() {
   const handleSubmit = async (e: React.FormEvent) =>{
     e.preventDefault()
   }
+
+  const handleAddSchoolRequest = (schoolData: Omit<SchoolRequest, 'id' | 'requestDate' | 'status'>) => {
+    // In a real application, this would send the data to your backend API
+    console.log('School request submitted:', schoolData);
+    
+    // Show success message (you could use a toast notification library)
+    alert('School request submitted successfully! You will receive an email notification once your school is approved.');
+    
+    // Close the modal
+    setShowAddSchoolModal(false);
+  };
   const eventTypes = [
     { id: 'school', name: 'School Event', icon: School, color: 'from-blue-500 to-indigo-600' },
     { id: 'wedding', name: 'Wedding', icon: Heart, color: 'from-pink-500 to-rose-600' },
@@ -36,11 +55,8 @@ function CreateEvents() {
     organizerName: '',
     organizerPassword: '',
     eventName: '',
-    fields: [
-      { id: '1', label: 'Name', type: 'text', required: true ,readOnly:false},
-      { id: '2', label: 'Amount', type: 'number', required: true,readOnly:false }
-    ],
-    paymentMethods: ['momo', 'om'],
+    fields: [], // No default fields - organizer must create their own
+    paymentMethods: [], // No default payment methods - organizer must select at least one
     formColors: {
       primary: '#7c3aed',
       secondary: '#a855f7',
@@ -213,7 +229,26 @@ function CreateEvents() {
     </div>
   );
 
-  
+  const cardVariants ={
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100
+      }
+    },
+    hover: {
+      y: -5,
+      transition: {
+        type: "spring",
+        stiffness: 400,
+        damping: 10
+      }
+    }
+  }satisfies Variants;
+
   return (
     <motion.div 
     className="h-full relative w-[100vw] md:w-full bg-gradient-to-br text-gray-700  "
@@ -231,6 +266,7 @@ function CreateEvents() {
             const Icon = type.icon;
             return (
               <motion.button
+                variants={cardVariants}
                 key={type.id}
                 className={`p-6 rounded-xl border-2 transition-all duration-200 ${
                   formData.eventType === type.id
@@ -259,7 +295,18 @@ function CreateEvents() {
         <StepIndicator/>
           {currentStep === 1 && <CreateCustomeEventFields formData={formData} setFormData={setFormData} eventNameError={eventNameError}/>} 
           {currentStep === 2 && <CreateFormCustomization formData={formData} setFormData={setFormData} />}
-          {currentStep === 3 && <CreateFinalConfiguration formData={formData} setFormData={setFormData} goalError={goalError} deadlineError={deadlineError}/>}
+          {currentStep === 3 && <CreateFinalConfiguration 
+            formData={formData} 
+            setFormData={setFormData} 
+            goalError={goalError} 
+            deadlineError={deadlineError}
+            showConfirmation={showConfirmation}
+            setShowConfirmation={setShowConfirmation}
+            showShareModal={showShareModal}
+            setShowShareModal={setShowShareModal}
+            ShareModalCard={ShareModalCard}
+            setShowShareModalCard={setShowShareModalCard}
+          />}
           {currentStep === 4 && <CreateReceiptCustomization formData={formData} setFormData={setFormData}/>} 
           <NavigationButtons />
        </div>
@@ -310,8 +357,8 @@ function CreateEvents() {
                 <input
                   type="text"
                   className="w-full p-3 border rounded-lg"
-                  value={formData.organizerName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, organizerName: e.target.value }))}
+                  value={SchoolData.name}
+                  onChange={(e) =>setSchoolData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Your name"
                 />
               </div>
@@ -321,8 +368,8 @@ function CreateEvents() {
                 <input
                   type="password"
                   className="w-full p-3 border rounded-lg"
-                  value={formData.organizerPassword}
-                  onChange={(e) => setFormData(prev => ({ ...prev, organizerPassword: e.target.value }))}
+                  value={SchoolData.password}
+                  onChange={(e) => setSchoolData(prev => ({ ...prev, password: e.target.value }))}
                   placeholder="Organizer password"
                 />
               </div>
@@ -335,7 +382,7 @@ function CreateEvents() {
               </button>
               <button
                 className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                disabled={!formData.schoolId || !formData.organizerName || !formData.organizerPassword}
+                disabled={!SchoolData.name || !SchoolData.password}
                 onClick={() => {
                   setShowSchoolModal(false);
                   setCurrentStep(1);
@@ -345,13 +392,29 @@ function CreateEvents() {
               </button>
             </div>
             <small className="mt-10">
-              not seeing your school? <a href="" className="text-purple-900 hover:cursor-pointer hover:text-purple-700">Add My School</a>
+              not seeing your school? <button 
+                type="button"
+                onClick={() => {
+                  setShowSchoolModal(false);
+                  setShowAddSchoolModal(true);
+                }}
+                className="text-purple-900 hover:cursor-pointer hover:text-purple-700"
+              >
+                Add My School
+              </button>
             </small>
             </form>
 
           </div>
         </motion.div>
       </Modal>
+
+      {/* Add School Modal */}
+      <AddSchoolModal
+        isOpen={showAddSchoolModal}
+        onClose={() => setShowAddSchoolModal(false)}
+        onSubmit={handleAddSchoolRequest}
+      />
     </motion.div>
   )
 }

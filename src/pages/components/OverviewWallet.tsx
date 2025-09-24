@@ -1,58 +1,33 @@
 import { AnimatePresence, motion, type Variants } from 'framer-motion'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { EventWallet } from './Organizer/Events/type';
 import { Building2, CreditCard, Eye, Settings, Smartphone } from 'lucide-react';
 
 function OverviewWallet() {
-  const [eventWallets] = useState<EventWallet[]>([
-      {
-        id: '1',
-        eventName: 'AICS School Fees 2024',
-        category: 'school',
-        balance: 2500000,
-        targetAmount: 5000000,
-        totalContributions: 2500000,
-        lastActivity: '2024-01-15T10:30:00Z',
-        status: 'active',
-        progress: 50,
-        contributorCount: 45
-      },
-      {
-        id: '2',
-        eventName: 'Marie & Paul Wedding',
-        category: 'wedding',
-        balance: 850000,
-        targetAmount: 1000000,
-        totalContributions: 850000,
-        lastActivity: '2024-01-14T14:20:00Z',
-        status: 'active',
-        progress: 85,
-        contributorCount: 32
-      },
-      {
-        id: '3',
-        eventName: 'Papa Joseph Memorial',
-        category: 'funeral',
-        balance: 1200000,
-        totalContributions: 1200000,
-        lastActivity: '2024-01-13T16:45:00Z',
-        status: 'completed',
-        progress: 100,
-        contributorCount: 67
-      },
-      {
-        id: '4',
-        eventName: 'Emma\'s Sweet 16',
-        category: 'birthday',
-        balance: 450000,
-        targetAmount: 600000,
-        totalContributions: 450000,
-        lastActivity: '2024-01-12T09:15:00Z',
-        status: 'active',
-        progress: 75,
-        contributorCount: 28
+  const [eventWallets, setEventWallets] = useState<EventWallet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchEventWallets = async () => {
+      try {
+        const userId = 1; // Assume userId is 1 for now
+        const response = await fetch(`http://localhost:5000/api/events/wallet-summary/${userId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch event wallets');
+        }
+        const data = await response.json();
+        setEventWallets(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
       }
-    ]);
+    };
+
+    fetchEventWallets();
+  }, []);
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'school':
@@ -118,13 +93,13 @@ function OverviewWallet() {
             whileHover="hover"
             className="relative overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-all duration-300"
           >
-            <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${getCategoryColor(wallet.category)}`} />
+            <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${getCategoryColor(wallet.organizerRole)}`} />
             
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{wallet.eventName}</h3>
+                    <h3 className="font-semibold text-gray-900">{wallet.title}</h3>
                     <div className="flex items-center space-x-2">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(wallet.status)}`}>
                         {wallet.status.charAt(0).toUpperCase() + wallet.status.slice(1)}
@@ -138,15 +113,15 @@ function OverviewWallet() {
                 
                 <div className="text-right">
                   <p className="text-2xl font-bold text-gray-900">
-                    {formatAmount(wallet.balance)}
+                    {formatAmount(wallet.totalAmount)}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Last: {formatDate(wallet.lastActivity)}
+                    Last: {formatDate(wallet.recentActivity)}
                   </p>
                 </div>
               </div>
 
-              {wallet.targetAmount && (
+              {/* {wallet.targetAmount && (
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                     <span>Progress</span>
@@ -154,14 +129,14 @@ function OverviewWallet() {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <motion.div
-                      className={`h-2 rounded-full bg-gradient-to-r ${getCategoryColor(wallet.category)}`}
+                      className={`h-2 rounded-full bg-gradient-to-r ${getCategoryColor(wallet.organizerRole)}`}
                       initial={{ width: 0 }}
                       animate={{ width: `${wallet.progress}%` }}
                       transition={{ duration: 1, delay: index * 0.2 }}
                     />
                   </div>
                 </div>
-              )}
+              )} */}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4 text-sm text-gray-600">

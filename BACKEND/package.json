@@ -1,19 +1,18 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "prisma:push": "prisma db push",
-    "prisma:seed": "ts-node-dev prisma/seed.ts"
+  "main": "server.js",
+  "type": "module",
+"scripts": {
+  "build": "tsc",
+  "prisma:push": "prisma db push",
+    "dev": "nodemon server.js",
+  "start": "node server.js"
+
+},
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.14.0",
     "bcryptjs": "^3.0.2",
@@ -31,6 +30,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
     "@types/node": "^24.3.0",
+    "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.2"

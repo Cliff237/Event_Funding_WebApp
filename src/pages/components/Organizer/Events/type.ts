@@ -52,7 +52,6 @@ export interface Transaction {
   payerName: string;
   payerEmail?: string;
   payerPhone?: string;
-  status: TransactionStatus;
   paymentMethod: PaymentMethod;
   customFields: Record<string, any>; // Dynamic fields based on event
   metadata?: {
@@ -115,18 +114,18 @@ export interface ReceiptData {
 }
 
 // overview Page 
-export interface EventWallet {
-  id: string;
-  eventName: string;
-  category: 'wedding' | 'school' | 'funeral' | 'birthday';
-  balance: number;
-  targetAmount?: number;
-  totalContributions: number;
-  lastActivity: string;
-  status: 'active' | 'completed' | 'locked' | 'cancelled';
-  progress: number;
-  contributorCount: number;
-}
+// export interface EventWallet {
+//   id: string;
+//   eventName: string;
+//   category: 'wedding' | 'school' | 'funeral' | 'birthday';
+//   balance: number;
+//   targetAmount?: number;
+//   totalContributions: number;
+//   lastActivity: string;
+//   status: 'active' | 'completed' | 'locked' | 'cancelled';
+//   progress: number;
+//   contributorCount: number;
+// }
 
 export interface PlatformStats {
   totalEvents?: number;
@@ -141,6 +140,7 @@ export interface PlatformStats {
   successRate?: number;
   avgContribution?: number;
   totalTransactions?: number;
+  totalContributors?: number;
 }
 
 export interface QuickStats {
@@ -152,6 +152,62 @@ export interface QuickStats {
   bgGradient?: string;
 }
 
+// export interface PlatformStats {
+//   totalEvents: number;
+//   activeEvents: number;
+//   totalRevenue: number;
+//   monthlyGrowth: number;
+//   totalUsers: number;
+//   successRate: number;
+//   avgContribution: number;
+//   totalTransactions: number;
+//   totalContributors?: number;
+// }
+
+// export interface QuickStats {
+//   label: string;
+//   value: string;
+//   change: number;
+//   icon: React.ReactNode;
+//   color: string;
+//   bgGradient: string;
+// }
+
+export interface RecentEvent {
+  id: number;
+  title: string;
+  date: string;
+  status: string;
+  organizerName: string;
+  organizerRole: string;
+  totalContributions: number;
+  contributorCount: number;
+  isOwnEvent: boolean;
+}
+
+export interface EventWallet {
+  id: number;
+  title: string;
+  status: EventStatus;
+  organizerName: string;
+  organizerRole: string;
+  isOwnEvent: boolean;
+  totalAmount: number;
+  contributorCount: number;
+  recentActivity: string;
+}
+
+export interface OverviewData {
+  userRole: string;
+  schoolId: number | null;
+  platformStats: PlatformStats;
+  recentEvents: RecentEvent[];
+  quickStats: Array<{
+    label: string;
+    value: number;
+    change: number;
+  }>;
+}
 // export interface Schools {
 //   id: string;
 //   name: string;
@@ -276,4 +332,57 @@ export interface EventStats {
     bank: number;
     wallet: number;
   };
+  featuredContributors?: string[];
+}
+
+//schools
+export interface RequestDocument {
+  name: string;
+  type: string;
+  url: string;
+}
+
+
+export interface SchoolRequest {
+  id: number;
+  organizerName: string;
+  organizerEmail: string;
+  schoolName: string;
+  schoolType: string;
+  location: string;
+  phone: string;
+  website: string;
+  studentsCount: number;
+  description: string;
+  documents: RequestDocument[];
+  requestDate: string; // ISO
+  status: 'pending' | 'approved' | 'rejected' | string;
+}
+
+export interface ApprovedSchool {
+  id: number;
+  name: string;
+  type: string;
+  location: string;
+  adminName: string;
+  adminEmail: string;
+  studentsCount: number;
+  eventsCount: number;
+  logo: string;
+  approvedDate: string; // ISO
+  status: 'active' | 'inactive' | string;
+  phone: string;
+  website: string;
+}
+
+export interface ValidationForm {
+  logo: File | null;
+  schoolAdminName: string;
+  password: string;
+  customMessage: string;
+}
+
+export interface RejectionForm {
+  reason: string;
+  customMessage: string;
 }

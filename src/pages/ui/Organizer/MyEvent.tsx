@@ -1,109 +1,84 @@
 import { motion, type Variants } from 'framer-motion'
-import { AlertCircle, CheckCircle, Pause,Lock, Plus, Search, Star, XCircle, Eye, Unlock, Trash, Clock, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { AlertCircle, CheckCircle, Pause,Lock, Plus, Search, Star,  Eye, Unlock, Trash, Clock, ChevronLeft, ChevronRight, Calendar, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react'
 import type { Events } from '../../components/Organizer/Events/type';
 import EventStatsModal from '../../components/Organizer/MyEventStatModal';
+import apiRequest from '../../../utils/apiRequest';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  id: number;
+  name: string;
+  role: string;
+  exp: number;
+}
 
 function MyEvent() {
- const [events, setEvents] = useState<Events[]>([
-    {
-      id: '1',
-      title: 'AICS School Fees 2024',
-      description: 'Collect school fees for academic year 2024-2025',
-      category: 'school',
-      status: 'active',
-      targetAmount: 5000000,
-      currentAmount: 2500000,
-      contributorCount: 45,
-      createdDate: '2025-01-01',
-      deadline: '2026-01-09',
-      duration: 90,
-      isLocked: false,
-      progress: 50,
-      totalTransactions: 78,
-      avgContribution: 55555,
-      lastActivity: '2024-01-15T10:30:00Z',
-      completionRate: 85.2,
-      featuredContributors: ['Alice J.', 'Bob W.', 'Carol B.']
-    },
-    {
-      id: '2',
-      title: 'Marie & Paul Wedding',
-      description: 'Help us celebrate our special day',
-      category: 'wedding',
-      status: 'active',
-      targetAmount: 1000000,
-      currentAmount: 850000,
-      contributorCount: 32,
-      createdDate: '2025-02-15',
-      deadline: '2026-02-14',
-      duration: 60,
-      isLocked: false,
-      progress: 85,
-      totalTransactions: 45,
-      avgContribution: 26562,
-      lastActivity: '2024-01-14T14:20:00Z',
-      completionRate: 91.4,
-      featuredContributors: ['David L.', 'Emma M.', 'Frank T.']
-    },
-    {
-      id: '3',
-      title: 'Papa Joseph Memorial',
-      description: 'Memorial service contributions',
-      category: 'funeral',
-      status: 'completed',
-      currentAmount: 1200000,
-      contributorCount: 67,
-      createdDate: '2023-11-20',
-      deadline: '2023-12-20',
-      duration: 30,
-      isLocked: true,
-      progress: 100,
-      totalTransactions: 89,
-      avgContribution: 17910,
-      lastActivity: '2023-12-19T16:45:00Z',
-      completionRate: 100,
-      featuredContributors: ['Grace H.', 'Henry K.', 'Ivy N.']
-    },
-    {
-      id: '5',
-      title: 'Emma\'s Sweet 16',
-      description: 'Birthday celebration fund',
-      category: 'birthday',
-      status: 'paused',
-      targetAmount: 600000,
-      currentAmount: 450000,
-      contributorCount: 28,
-      createdDate: '2025-01-05',
-      deadline: '2025-01-28',
-      duration: 54,
-      isLocked: false,
-      progress: 75,
-      totalTransactions: 35,
-      avgContribution: 16071,
-      lastActivity: '2024-01-12T09:15:00Z',
-      completionRate: 68.8,
-      featuredContributors: ['Jack R.', 'Kate S.', 'Leo P.']
-    }
-  ]);
+  const [events, setEvents] = useState<Events[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEvent, setSelectedEvent] = useState<Events | null>(null);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [itemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  // Client-side pagination metrics
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
 
-  const filteredEvents = events.filter(events => {
-    const matchesStatus = filterStatus === 'all' || events.status === filterStatus;
-    const matchesSearch = events.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         events.description.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    // decode user id from token once
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const decoded = jwtDecode<DecodedToken>(token);
+      setUserId(decoded.id);
+    } catch (e) {
+      console.error('Invalid token', e);
+    }
+  }, []);
+
+  const fetchEvents = async () => {
+    if (!userId) return;
+    setLoading(true);
+    try {
+      const res = await apiRequest<{
+        events: Events[];
+        pagination: { currentPage: number; totalPages: number; totalEvents: number };
+      }>(`/api/events/my-events/${userId}`, {
+        method: 'GET',
+        params: {
+          // Fetch a large page and paginate on the client to keep original UX
+          page: 1,
+          limit: 1000,
+        },
+      });
+      setEvents(res.events);
+    } catch (err) {
+      console.error('Failed to fetch events', err);
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Client-side filter and pagination (original behavior)
+  const filteredEvents = events.filter(ev => {
+    const matchesStatus = filterStatus === 'all' || ev.status === filterStatus;
+    const matchesSearch = ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          ev.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesSearch;
   });
-  // Pagination
   const paginatedEvents = useMemo(() => {
-      const start = (currentPage - 1) * itemsPerPage;
-      return filteredEvents.slice(start, start + itemsPerPage);
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredEvents.slice(start, start + itemsPerPage);
   }, [filteredEvents, currentPage, itemsPerPage]);
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage) || 1;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'text-green-600 bg-green-100 border-green-200';
@@ -135,12 +110,12 @@ function MyEvent() {
     const createdDate = new Date(createdAt);
     const deadlineDate = new Date(deadline);
     const now = new Date();
-  
+
     if (now > deadlineDate) return 0;
     const totalDays = Math.ceil(
       (deadlineDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
     );
-  
+
     // calculate elapsed days since creation
     const elapsedDays = Math.floor(
       (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -153,15 +128,48 @@ function MyEvent() {
     if (!text) return "";
     return text.length > 20 ? text.substring(0, 20) + "..." : text;
   };
-  const toggleEventLock = (eventId: string) => {
-    setEvents(events.map(event => 
-      event.id === eventId 
-        ? { ...event, isLocked: !event.isLocked, status: event.isLocked ? 'active' : 'locked' }
-        : event
-    ));
+  const toggleEventLock = async (eventId: string) => {
+    if (!userId) return;
+    try {
+      const updated = await apiRequest<{ id: string; isLocked: boolean; status: string; currentAmount: number; contributorCount: number }>(
+        `/api/events/toggle-lock/${userId}/${eventId}`,
+        { method: 'PATCH' }
+      );
+      setEvents(prev => prev.map(ev =>
+        ev.id === updated.id ? { ...ev, isLocked: updated.isLocked, status: updated.status as any, currentAmount: updated.currentAmount, contributorCount: updated.contributorCount } : ev
+      ));
+    } catch (e) {
+      console.error('Failed to toggle lock', e);
+    }
   };
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  
+
+  const handleDelete = async (eventId: string) => {
+    if (!userId) return;
+    const confirmed = window.confirm('Are you sure you want to delete this event? This action cannot be undone.');
+    if (!confirmed) return;
+    try {
+      await apiRequest(`/api/events/${userId}/${eventId}`, { method: 'DELETE' });
+      setEvents(prev => {
+        const updated = prev.filter(ev => ev.id !== eventId);
+        // Adjust current page if we removed the last item on the last page
+        const updatedFiltered = updated.filter(ev => {
+          const matchesStatus = filterStatus === 'all' || ev.status === filterStatus;
+          const matchesSearch = ev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                ev.description.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesStatus && matchesSearch;
+        });
+        const newTotalPages = Math.ceil(updatedFiltered.length / itemsPerPage) || 1;
+        if (currentPage > newTotalPages) {
+          setCurrentPage(newTotalPages);
+        }
+        return updated;
+      });
+    } catch (e) {
+      console.error('Failed to delete event', e);
+      alert('Failed to delete the event. Please try again.');
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -170,7 +178,7 @@ function MyEvent() {
         staggerChildren: 0.1
       }
     }
-  }satisfies Variants;
+  } satisfies Variants;
 
   const cardVariants = {
     hidden: { y: 20, opacity: 0 },
@@ -190,7 +198,7 @@ function MyEvent() {
         damping: 10
       }
     }
-  }satisfies Variants;
+  } satisfies Variants;
 
   return (
     <div className="h-screen  overflow-y-auto  w-full overflow-x-hidden">
@@ -240,7 +248,7 @@ function MyEvent() {
                 <option value="all">All Events</option>
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
-                {/* <option value="paused">Paused</option> */}
+                <option value="paused">Paused</option>
                 <option value="locked">Locked</option>
                 <option value="cancelled">Cancelled</option>
               </select>
@@ -308,6 +316,7 @@ function MyEvent() {
                           
                         
                           <button
+                          onClick={() => handleDelete(event.id)}
                           className='p-2  rounded-lg cursor-pointer hover:bg-red-100 text-red-400'>
                             <Trash size={15}/>
                           </button>
@@ -364,7 +373,7 @@ function MyEvent() {
         <div className="px-6 py-4 border-t mb-5 border-gray-200">
           <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredEvents.length)} of {filteredEvents.length} results
+                  Showing {((currentPage - 1) * itemsPerPage) + (filteredEvents.length > 0 ? 1 : 0)} to {Math.min(currentPage * itemsPerPage, filteredEvents.length)} of {filteredEvents.length} results
               </div>
               <div className="flex items-center space-x-2">
                   <button

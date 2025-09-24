@@ -7,7 +7,6 @@ CREATE TABLE `User` (
     `profile` VARCHAR(191) NULL,
     `role` ENUM('SUPER_ADMIN', 'SCHOOL_ADMIN', 'SCHOOL_ORGANIZER', 'ORGANIZER') NOT NULL DEFAULT 'ORGANIZER',
     `schoolId` INTEGER NULL,
-    `eventId` INTEGER NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -24,10 +23,11 @@ CREATE TABLE `School` (
     `email` VARCHAR(191) NOT NULL,
     `city` VARCHAR(191) NULL,
     `code` VARCHAR(191) NULL,
-    `approved` BOOLEAN NULL DEFAULT false,
+    `approved` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    UNIQUE INDEX `School_email_key`(`email`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -36,7 +36,7 @@ CREATE TABLE `Event` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NULL,
-    `type` VARCHAR(191) NOT NULL,
+    `type` ENUM('SCHOOL', 'WEDDING', 'FUNERAL', 'BIRTHDAY', 'CHARITY', 'BUSINESS', 'CONFERENCE', 'CEREMONY', 'CONCERT', 'OTHER') NOT NULL,
     `status` ENUM('PENDING', 'APPROVED', 'REJECTED', 'COMPLETED') NOT NULL DEFAULT 'PENDING',
     `date` DATETIME(3) NULL,
     `location` VARCHAR(191) NULL,
@@ -44,31 +44,20 @@ CREATE TABLE `Event` (
     `paymentMethods` JSON NULL,
     `theme` JSON NULL,
     `eventLink` VARCHAR(191) NOT NULL,
-    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `updatedAt` DATETIME(3) NOT NULL,
     `organizerId` INTEGER NOT NULL,
     `schoolId` INTEGER NULL,
-
-    UNIQUE INDEX `Event_organizerId_eventLink_key`(`organizerId`, `eventLink`),
-    PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
--- CreateTable
-CREATE TABLE `Payment` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `answers` JSON NOT NULL,
-    `amount` DOUBLE NOT NULL,
-    `method` ENUM('MOMO', 'OM', 'BANK') NOT NULL,
-    `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `eventId` INTEGER NOT NULL,
+    `updatedAt` DATETIME(3) NOT NULL,
 
+    UNIQUE INDEX `Event_eventLink_key`(`eventLink`),
+    UNIQUE INDEX `Event_organizerId_eventLink_key`(`organizerId`, `eventLink`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `EventField` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `eventId` INTEGER NOT NULL,
     `label` VARCHAR(191) NOT NULL,
     `fieldType` ENUM('TEXT', 'NUMBER', 'SELECT', 'RADIO', 'CHECKBOX', 'EMAIL', 'TEL', 'FILE', 'IMAGE') NOT NULL,
     `required` BOOLEAN NOT NULL DEFAULT true,
@@ -79,7 +68,19 @@ CREATE TABLE `EventField` (
     `max` INTEGER NULL,
     `fixedValue` BOOLEAN NULL DEFAULT false,
     `conditional` JSON NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Payment` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `answers` JSON NOT NULL,
+    `amount` DOUBLE NOT NULL,
+    `method` ENUM('MOMO', 'OM', 'CARD', 'BANK') NOT NULL,
+    `status` ENUM('PENDING', 'COMPLETED', 'FAILED') NOT NULL DEFAULT 'PENDING',
     `eventId` INTEGER NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -89,10 +90,10 @@ CREATE TABLE `Receipt` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `receiptData` JSON NOT NULL,
     `qrCode` VARCHAR(191) NULL,
+    `paidAt` DATETIME(3) NOT NULL,
     `eventId` INTEGER NOT NULL,
     `contributorId` INTEGER NOT NULL,
     `contributionId` INTEGER NULL,
-    `paidAt` DATETIME(3) NOT NULL,
     `customFields` JSON NOT NULL,
     `schoolName` VARCHAR(191) NOT NULL,
     `schoolLogo` VARCHAR(191) NULL,
@@ -109,6 +110,30 @@ CREATE TABLE `Notification` (
     `isRead` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `userId` INTEGER NOT NULL,
+    `eventId` INTEGER NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `PayoutConfig` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `organizerId` INTEGER NOT NULL,
+    `type` VARCHAR(191) NOT NULL,
+    `accountInfo` JSON NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `TransactionLog` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NULL,
+    `eventId` INTEGER NULL,
+    `action` VARCHAR(191) NOT NULL,
+    `details` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -123,10 +148,10 @@ ALTER TABLE `Event` ADD CONSTRAINT `Event_organizerId_fkey` FOREIGN KEY (`organi
 ALTER TABLE `Event` ADD CONSTRAINT `Event_schoolId_fkey` FOREIGN KEY (`schoolId`) REFERENCES `School`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Payment` ADD CONSTRAINT `Payment_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `EventField` ADD CONSTRAINT `EventField_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `EventField` ADD CONSTRAINT `EventField_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `Payment` ADD CONSTRAINT `Payment_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Receipt` ADD CONSTRAINT `Receipt_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -139,3 +164,15 @@ ALTER TABLE `Receipt` ADD CONSTRAINT `Receipt_contributionId_fkey` FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE `Notification` ADD CONSTRAINT `Notification_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Notification` ADD CONSTRAINT `Notification_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `PayoutConfig` ADD CONSTRAINT `PayoutConfig_organizerId_fkey` FOREIGN KEY (`organizerId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransactionLog` ADD CONSTRAINT `TransactionLog_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransactionLog` ADD CONSTRAINT `TransactionLog_eventId_fkey` FOREIGN KEY (`eventId`) REFERENCES `Event`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

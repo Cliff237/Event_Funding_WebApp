@@ -16,8 +16,6 @@ interface FilterState {
 interface OverviewStats {
   totalTransactions: number;
   totalAmount: number;
-  successfulTransactions: number;
-  pendingFailedTransactions: number;
 }
 export default function TransactionsPage(){
 
@@ -55,7 +53,6 @@ export default function TransactionsPage(){
             transactionId: 'TX001',
             paymentMethod: 'momo',
             date: '2024-01-15T10:30:00Z',
-            status: 'success',
             amount: 50000,
             payerName: 'John Doe',
             payerEmail: 'john@example.com',
@@ -69,7 +66,6 @@ export default function TransactionsPage(){
             transactionId: 'TX002',
             paymentMethod: 'om',
             date: '2024-01-14T14:20:00Z',
-            status: 'pending',
             amount: 50000,
             payerName: 'Jane Smith',
             payerEmail: 'jane@example.com',
@@ -83,7 +79,6 @@ export default function TransactionsPage(){
             transactionId: 'TX003',
             paymentMethod: 'visa',
             date: '2024-01-13T16:45:00Z',
-            status: 'success',
             amount: 25000,
             payerName: 'Alice Johnson',
             payerEmail: 'alice@example.com',
@@ -97,7 +92,6 @@ export default function TransactionsPage(){
             transactionId: 'TX003',
             paymentMethod: 'visa',
             date: '2024-01-13T16:45:00Z',
-            status: 'success',
             amount: 25000,
             payerName: 'Alice Johnson',
             payerEmail: 'alice@example.com',
@@ -144,7 +138,6 @@ export default function TransactionsPage(){
     const filteredTransactions = useMemo(() => {
       return transactions.filter(transaction => {
         if (filters.eventId && transaction.eventId !== filters.eventId) return false;
-        if (filters.status && transaction.status !== filters.status) return false;
         if (filters.paymentMethod && transaction.paymentMethod !== filters.paymentMethod) return false;
         if (filters.search) {
           const searchLower = filters.search.toLowerCase();
@@ -166,18 +159,15 @@ export default function TransactionsPage(){
     return {
         totalTransactions: filtered.length,
         totalAmount: filtered.reduce((sum, t) => sum + t.amount, 0),
-        successfulTransactions: filtered.filter(t => t.status === 'success').length,
-        pendingFailedTransactions: filtered.filter(t => t.status !== 'success').length,
     };
     }, [filteredTransactions]);
     // Get recent contributors
-    const recentContributors = useMemo(() => {
-        return transactions
-        .filter(t => t.status === 'success')
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
-    }, [transactions]);
-
+    const recentTransactions = useMemo(() => {
+        return [...transactions]
+          .filter(t => t.date) // optional guard if some items may miss date
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 5);
+      }, [transactions]);
     // Pagination
     const paginatedTransactions = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -192,7 +182,7 @@ export default function TransactionsPage(){
     };
 
   const toggleColumnVisibility = (columnId: string) => {
-    const defaultColumns = ['transactionId', 'paymentMethod', 'date', 'status'];
+    const defaultColumns = ['transactionId', 'paymentMethod', 'date'];
     if (defaultColumns.includes(columnId)) return; // Can't hide default columns
     
     setVisibleColumns(prev => ({ ...prev, [columnId]: !prev[columnId] }));
@@ -203,7 +193,7 @@ export default function TransactionsPage(){
     const csvContent = "data:text/csv;charset=utf-8," 
       + "Transaction ID,paymentMethod,Date,Status,Amount,Payer Name\n"
       + filteredTransactions.map(t => 
-          `${t.transactionId},${t.paymentMethod},${t.date},${t.status},${t.amount},${t.payerName}`
+          `${t.transactionId},${t.paymentMethod},${t.date},{t.amount},${t.payerName}`
         ).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -233,18 +223,7 @@ export default function TransactionsPage(){
     });
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'success':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-500" />;
-      case 'failed':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return null;
-    }
-  };
+
 
   const getpaymentMethodIcon = (paymentMethod: string) => {
     switch (paymentMethod) {
@@ -308,8 +287,6 @@ export default function TransactionsPage(){
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-3">
                                 <TransactionCard totalTransaction={'Total Transactions'} overViewStat={overviewStats.totalTransactions.toLocaleString()} icon={<BarChart3 className="w-6 h-6 text-purple-800" />}/>
                                 <TransactionCard totalTransaction={"Total Amount"} overViewStat={formatAmount(overviewStats.totalAmount)} icon={<DollarSign className="w-6 h-6 text-green-800" />}/>
-                                <TransactionCard totalTransaction={"Successful"} overViewStat={overviewStats.successfulTransactions} icon={ <CheckCircle className="w-6 h-6 text-green-800" />}/>
-                                <TransactionCard totalTransaction={"Pending and Faild"} overViewStat={overviewStats.pendingFailedTransactions} icon={ <Clock className="w-6 h-6 text-yellow-800" />}/>
                             </div>
                             
                             {/* Transaction Table  */}
@@ -372,7 +349,7 @@ export default function TransactionsPage(){
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction ID</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                        {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th> */}
                                         {visibleColumns['payerName'] && (
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payer Name</th>
                                         )}
@@ -401,18 +378,6 @@ export default function TransactionsPage(){
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatDate(transaction.date)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <div className="flex items-center">
-                                                {getStatusIcon(transaction.status)}
-                                                <span className={`ml-2 capitalize ${
-                                                transaction.status === 'success' ? 'text-green-600' :
-                                                transaction.status === 'pending' ? 'text-yellow-600' :
-                                                'text-red-600'
-                                                }`}>
-                                                {transaction.status}
-                                                </span>
-                                            </div>
                                             </td>
                                             {visibleColumns['payerName'] && (
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -494,7 +459,7 @@ export default function TransactionsPage(){
                             <div className="bg-white rounded-lg shadow p-6">
                                 <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Contributors</h3>
                                 <div className="space-y-3">
-                                    {recentContributors.map((transaction) => (
+                                    {recentTransactions.map((transaction) => (
                                     <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                             <div className="flex-1">
                                                 <p className="text-sm font-medium ">{transaction.payerName}</p>
