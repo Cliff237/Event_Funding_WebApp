@@ -35,7 +35,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
         newFields.push({
           id: 'payment_amount',
           label: 'Contribution Amount (FCFA)',
-          type: 'number',
+          type: 'NUMBER',
           required: true,
           readOnly: false,
           min: 100,
@@ -45,13 +45,13 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
     }
     
     // Add phone number fields for mobile money methods
-    if (paymentMethods.includes('momo')) {
+    if (paymentMethods.includes('MOMO')) {
       const momoPhoneExists = newFields.some(field => field.id === 'phone_momo');
       if (!momoPhoneExists) {
         newFields.push({
           id: 'phone_momo',
           label: 'MTN MoMo Phone Number',
-          type: 'tel',
+          type: 'TEL',
           required: true,
           readOnly: false,
           placeholder: '6XXXXXXXX'
@@ -59,13 +59,13 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
       }
     }
     
-    if (paymentMethods.includes('om')) {
+    if (paymentMethods.includes('OM')) {
       const omPhoneExists = newFields.some(field => field.id === 'phone_om');
       if (!omPhoneExists) {
         newFields.push({
           id: 'phone_om',
           label: 'Orange Money Phone Number',
-          type: 'tel',
+          type: 'TEL',
           required: true,
           readOnly: false,
           placeholder: '6XXXXXXXX'
@@ -89,7 +89,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
     const newField: FormField = {
       id: Date.now().toString(),
       label: 'New Field',
-      type: 'text',
+      type: 'TEXT',
       required: false,
       readOnly: false,
       options: [],
@@ -108,7 +108,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
     const conditionalField: FormField = {
       id: Date.now().toString(),
       label: 'Conditional Field',
-      type: 'conditional',
+      type: 'CONDITIONAL',
       required: false,
       readOnly: false,
       condition: {
@@ -163,20 +163,20 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
   };
 
   const fieldTypeOptions = [
-    { value: 'text', label: 'Text Input', icon: '📝', desc: 'Single line text' },
-    { value: 'number', label: 'Number', icon: '🔢', desc: 'Numeric input with validation' },
-    { value: 'email', label: 'Email', icon: '📧', desc: 'Email address validation' },
-    { value: 'tel', label: 'Phone', icon: '📱', desc: 'Phone number input' },
-    { value: 'image', label: 'Image Upload', icon: '🖼️', desc: 'File upload for images' },
-    { value: 'select', label: 'Dropdown', icon: '📋', desc: 'Multiple choice selection' },
-    { value: 'conditional', label: 'Conditional', icon: '🔗', desc: 'Shows based on other field' },
+    { value: 'TEXT', label: 'Text Input', icon: '📝', desc: 'Single line text' },
+    { value: 'NUMBER', label: 'Number', icon: '🔢', desc: 'Numeric input with validation' },
+    { value: 'EMAIL', label: 'Email', icon: '📧', desc: 'Email address validation' },
+    { value: 'TEL', label: 'Phone', icon: '📱', desc: 'Phone number input' },
+    { value: 'IMAGE', label: 'Image Upload', icon: '🖼️', desc: 'File upload for images' },
+    { value: 'SELECT', label: 'Dropdown', icon: '📋', desc: 'Multiple choice selection' },
+    { value: 'CONDITIONAL', label: 'Conditional', icon: '🔗', desc: 'Shows based on other field' },
   ];
 
   const paymentMethods = [
-    { id: 'momo', name: 'MTN MoMo', color: 'from-yellow-400 to-yellow-600', icon: '💳', desc: 'Mobile Money' },
-    { id: 'om', name: 'Orange Money', color: 'from-orange-400 to-orange-600', icon: '🟠', desc: 'Mobile Payment' },
-    { id: 'visa', name: 'Visa Card', color: 'from-blue-400 to-blue-600', icon: '💎', desc: 'Credit/Debit Card' },
-    { id: 'app_wallet', name: 'App Wallet', color: 'from-purple-400 to-purple-600', icon: '👛', desc: 'In-app Balance' },
+    { id: 'MOMO', name: 'MTN MoMo', color: 'from-yellow-400 to-yellow-600', icon: '💳', desc: 'Mobile Money' },
+    { id: 'OM', name: 'Orange Money', color: 'from-orange-400 to-orange-600', icon: '🟠', desc: 'Mobile Payment' },
+    { id: 'CARD', name: 'Card', color: 'from-blue-400 to-blue-600', icon: '💎', desc: 'Credit/Debit Card' },
+    { id: 'BANK', name: 'Bank Transfer', color: 'from-purple-400 to-purple-600', icon: '👛', desc: 'Bank Account' },
   ];
 
   const getFieldIcon = (type: FieldType) => {
@@ -377,21 +377,19 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
             {/* Fields List */}
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
               <AnimatePresence>
-                {formData.fields.map((field, index) => (
-                  <motion.div
+                {formData.fields.map((field, index) => {
+                  const isDraggable = !isPaymentField(field.id);
+                  return (
+                  <div
                     key={field.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20, scale: 0.95 }}
                     className={`group relative p-5 rounded-xl border-2 transition-all duration-200 ${
                       activeField === field.id 
                         ? 'border-purple-300 bg-purple-50 shadow-lg' 
                         : isPaymentField(field.id)
                         ? 'border-green-200 bg-green-50 hover:border-green-300'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
-                    }`}
-                    draggable={!isPaymentField(field.id)}
+                    } ${isDraggable ? 'cursor-move' : ''}`}
+                    draggable={isDraggable}
                     onDragStart={(e) => handleDragStart(e, field.id, index)}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, index)}
@@ -401,9 +399,9 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                       <div className="flex items-center space-x-4">
                         <div className="flex items-center space-x-3">
                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-semibold text-sm ${
-                            isPaymentField(field.id) ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-gray-400 to-gray-500'
+                            isPaymentField(field.id) ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gradient-to-r from-gray-400 to-gray-500' 
                           }`}>
-                            {index + 1}
+                            {index + 1} 
                           </div>
                           {!isPaymentField(field.id) && <GripVertical className="w-4 h-4 text-gray-400 cursor-move" />}
                         </div>
@@ -415,7 +413,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                               <span className="font-medium text-gray-900">{field.label}</span>
                               {isPaymentField(field.id) && (
                                 <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                                  Auto-Generated
+                                  Auto-generated
                                 </span>
                               )}
                               {field.required && (
@@ -430,7 +428,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                               )}
                             </div>
                             <p className="text-sm text-gray-500 capitalize">
-                              {field.type === 'conditional' ? '🔗 Conditional Field' : `${field.type} field`}
+                              {field.type === 'CONDITIONAL' ? '🔗 Conditional Field' : `${field.type.toLowerCase()} field`}
                             </p>
                           </div>
                         </div>
@@ -517,8 +515,8 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
 
                           {/* Field Type Specific Settings */}
                           <AnimatePresence>
-                            {/* Number field settings */}
-                            {field.type === 'number' && (
+                            {/* Number field settings */} 
+                            {field.type === 'NUMBER' && (
                               <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -575,7 +573,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                             )}
 
                             {/* Select field options */}
-                            {field.type === 'select' && (
+                            {field.type === 'SELECT' && (
                               <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -644,7 +642,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                             )}
 
                             {/* Conditional field settings */}
-                            {field.type === 'conditional' && showAdvanced && (
+                            {field.type === 'CONDITIONAL' && showAdvanced && (
                               <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -672,7 +670,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                                     >
                                       <option value="">Select field...</option>
                                       {formData.fields
-                                        .filter((f) => f.id !== field.id && f.type === 'select')
+                                        .filter((f) => f.id !== field.id && f.type === 'SELECT')
                                         .map((f) => (
                                           <option key={f.id} value={f.id}>
                                             {f.label}
@@ -754,14 +752,14 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                  </div>
+                )})}
+              </AnimatePresence> 
             </div>
 
             {/* Add Conditional Field Button */}
             <AnimatePresence>
-              {showAdvanced && formData.fields.some(f => f.type === 'select' && !isPaymentField(f.id)) && (
+              {showAdvanced && formData.fields.some(f => f.type === 'SELECT' && !isPaymentField(f.id)) && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -769,7 +767,7 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                   className="mt-6 pt-6 border-t border-gray-200"
                 >
                   <motion.button
-                    onClick={() => addConditionalField(formData.fields.find(f => f.type === 'select' && !isPaymentField(f.id))?.id || '')}
+                    onClick={() => addConditionalField(formData.fields.find(f => f.type === 'SELECT' && !isPaymentField(f.id))?.id || '')}
                     className="w-full p-4 border-2 border-dashed border-indigo-300 rounded-xl text-indigo-600 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-200 flex items-center justify-center space-x-3"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -795,9 +793,9 @@ function CreateCustomeEventFields({ formData, eventNameError, setFormData }: Pro
                   <span>Add Field</span>
                 </motion.button>
                 
-                {showAdvanced && formData.fields.some(f => f.type === 'select' && !isPaymentField(f.id)) && (
+                {showAdvanced && formData.fields.some(f => f.type === 'SELECT' && !isPaymentField(f.id)) && (
                   <motion.button
-                    onClick={() => addConditionalField(formData.fields.find(f => f.type === 'select' && !isPaymentField(f.id))?.id || '')}
+                    onClick={() => addConditionalField(formData.fields.find(f => f.type === 'SELECT' && !isPaymentField(f.id))?.id || '')}
                     className="flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all duration-200 shadow-lg font-medium"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}

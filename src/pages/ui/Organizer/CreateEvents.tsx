@@ -41,23 +41,23 @@ function CreateEvents() {
     setShowAddSchoolModal(false);
   };
   const eventTypes = [
-    { id: 'school', name: 'School Event', icon: School, color: 'from-blue-500 to-indigo-600' },
-    { id: 'wedding', name: 'Wedding', icon: Heart, color: 'from-pink-500 to-rose-600' },
-    { id: 'funeral', name: 'Funeral', icon: Flower2, color: 'from-gray-500 to-slate-600' },
-    { id: 'birthday', name: 'Birthday', icon: PartyPopper, color: 'from-yellow-500 to-orange-600' },
-    { id: 'business', name: 'Business', icon: Building2, color: 'from-green-500 to-emerald-600' },
-    { id: 'charity', name: 'Charity', icon: Users, color: 'from-teal-500 to-cyan-600' },
-    { id: 'conference', name: 'Conference', icon: GraduationCap, color: 'from-purple-500 to-violet-600' },
-    { id: 'other', name: 'Other', icon: Calendar, color: 'from-gray-500 to-slate-600' }
+    { id: 'SCHOOL', name: 'School Event', icon: School, color: 'from-blue-500 to-indigo-600' },
+    { id: 'WEDDING', name: 'Wedding', icon: Heart, color: 'from-pink-500 to-rose-600' },
+    { id: 'FUNERAL', name: 'Funeral', icon: Flower2, color: 'from-gray-500 to-slate-600' },
+    { id: 'BIRTHDAY', name: 'Birthday', icon: PartyPopper, color: 'from-yellow-500 to-orange-600' },
+    { id: 'BUSINESS', name: 'Business', icon: Building2, color: 'from-green-500 to-emerald-600' },
+    { id: 'CHARITY', name: 'Charity', icon: Users, color: 'from-teal-500 to-cyan-600' },
+    { id: 'CONFERENCE', name: 'Conference', icon: GraduationCap, color: 'from-purple-500 to-violet-600' },
+    { id: 'OTHER', name: 'Other', icon: Calendar, color: 'from-gray-500 to-slate-600' }
   ];
   const [formData, setFormData] = useState<EventFormData>({
-    eventType: 'school',
+    eventType: 'SCHOOL',
     organizerName: '',
     organizerPassword: '',
     eventName: '',
     fields: [], // No default fields - organizer must create their own
     paymentMethods: [], // No default payment methods - organizer must select at least one
-    formColors: {
+    formColor: {
       primary: '#7c3aed',
       secondary: '#a855f7',
       text: '#1f2937',
@@ -103,7 +103,7 @@ function CreateEvents() {
       { number: 3, title: 'Settings' },
     ];
     
-    if (formData.eventType === 'school') {
+    if (formData.eventType === 'SCHOOL') {
       steps.push({ number: 4, title: 'Receipt' });
     }
 
@@ -115,7 +115,7 @@ function CreateEvents() {
               <button
                 onClick={() => {
                   // Only allow navigation to completed steps
-                  const completedSteps = formData.eventType === 'school' ? 
+                  const completedSteps = formData.eventType === 'SCHOOL' ? 
                     (currentStep >= 4 ? 4 : currentStep) : 
                     (currentStep >= 3 ? 3 : currentStep);
                   
@@ -126,7 +126,7 @@ function CreateEvents() {
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
                   step.number <= currentStep
                     ? 'bg-purple-600 text-white'
-                    : step.number <= (formData.eventType === 'school' ? 4 : 3)
+                    : step.number <= (formData.eventType === 'SCHOOL' ? 4 : 3)
                     ? 'bg-gray-200 text-gray-600'
                     : 'bg-gray-100 text-gray-400'
                 } ${step.number <= currentStep ? 'cursor-pointer' : 'cursor-default'}`}
@@ -187,7 +187,7 @@ function CreateEvents() {
         <span>Previous</span>
       </button>
       
-      {currentStep < (formData.eventType === 'school' ? 4 : 3) && (
+      {currentStep < (formData.eventType === 'SCHOOL' ? 4 : 3) && (
         <button
           onClick={() => {
             // Validation for step 2
@@ -276,7 +276,7 @@ function CreateEvents() {
                 onClick={() => {
 
                   setFormData(prev => ({ ...prev, eventType: type.id as EventType }));
-                 (type.id === 'school') ? setShowSchoolModal(true) : setCurrentStep(1);
+                 (type.id === 'SCHOOL') ? setShowSchoolModal(true) : setCurrentStep(1);
                 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

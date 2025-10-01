@@ -22,59 +22,14 @@ import {
 } from 'lucide-react';
 import type { EventFormData, FormField, PaymentMethod } from '../components/Organizer/Events/type';
 
-// Mock event data - in real app, this would come from API
-const getMockEventData = (slug: string): EventFormData => {
-  return {
-    eventType: 'school',
-    organizerName: 'Marie Tchinda',
-    organizerPassword: '',
-    eventName: 'Support Our School Library Project',
-    eventTitle: 'Help Us Build a Better Future Through Education',
-    eventDescription: 'We are raising funds to renovate our school library and purchase new books and computers for our students. Your contribution will directly impact the education of over 500 students.',
-    fields: [
-      { id: '1', label: 'Full Name', type: 'text', required: true, readOnly: false },
-      { id: '2', label: 'Email Address', type: 'email', required: true, readOnly: false },
-      { id: '3', label: 'Phone Number', type: 'tel', required: false, readOnly: false },
-      { id: '4', label: 'Relationship to School', type: 'select', required: false, readOnly: false, options: ['Parent', 'Alumni', 'Teacher', 'Community Member', 'Other'] },
-      { id: '5', label: 'Message of Support', type: 'text', required: false, readOnly: false },
-      { id: 'payment_amount', label: 'Contribution Amount (FCFA)', type: 'number', required: true, readOnly: false, min: 500 },
-      { id: 'phone_momo', label: 'MTN MoMo Phone Number', type: 'tel', required: true, readOnly: false, placeholder: '6XXXXXXXX' },
-      { id: 'phone_om', label: 'Orange Money Phone Number', type: 'tel', required: true, readOnly: false, placeholder: '6XXXXXXXX' }
-    ],
-    paymentMethods: ['momo', 'om', 'visa'],
-    formColors: { primary: '#10b981', secondary: '#34d399', text: '#064e3b', background: '#f0fdf4'
-    },
-    walletType: 'app_wallet',
-    fundraisingGoal: 500000,
-    deadline: '2024-12-31T23:59:59Z',
-    contributorMessage: 'Thank you so much for your generous contribution to our school library project! Your support means the world to our students and will help create a brighter future for education in our community. We will keep you updated on our progress.',
-    receiptConfig: {
-      includeFields: ['1', '2', 'payment_amount'],
-      includeQR: true,
-      additionalFields: {},
-      school: {
-        name: 'École Primaire de Yaoundé',
-        link: 'https://school-website.com',
-        contact: '+237 699 123 456',
-        logoUrl: '/public/A1.jpg',
-      },
-      layout: 'one',
-      align: 'left',
-    },
-    eventCard: {
-      image: '',
-      title: '',
-      description: ''
-    }
-  };
-};
-
 const ContributorView: React.FC = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { eventType, eventSlug } = useParams<{ eventType: string; eventSlug: string }>();
   const navigate = useNavigate();
   
   // State management
   const [eventData, setEventData] = useState<EventFormData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
@@ -85,43 +40,114 @@ const ContributorView: React.FC = () => {
 
   // Load event data on mount
   useEffect(() => {
-    if (slug) {
-      // Simulate API call
-      const mockData = getMockEventData(slug);
-      setEventData(mockData);
-    }
-  }, [slug]);
+    const fetchEventData = async () => {
+      if (eventType && eventSlug) {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+          const response = await fetch(`http://localhost:5000/api/events/public/${eventType}/${eventSlug}`);
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.message || 'Failed to fetch event data');
+          }
+          
+          if (result.success && result.data) {
+            setEventData(result.data);
+            
+            // Debug: Log all fields received from backend
+            console.log('===== EVENT DATA LOADED =====');
+            console.log('All fields from backend:', result.data.fields);
+            console.log('Payment methods:', result.data.paymentMethods);
+            
+            // Ensure paymentMethods is an array
+            const methods = result.data.paymentMethods;
+            if (methods && !Array.isArray(methods)) {
+              console.warn("paymentMethods from backend is not an array, attempting to parse:", methods);
+            }
+          } else {
+            throw new Error('Invalid response format');
+          }
+        } catch (error) {
+          console.error('Error fetching event data:', error);
+          setError(error instanceof Error ? error.message : 'Unknown error occurred');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchEventData();
+  }, [eventType, eventSlug]);
 
   // Event type configuration
   const eventTypeConfig = {
-    school: { icon: School, name: 'School Event', color: 'from-blue-500 to-indigo-600' },
-    wedding: { icon: Heart, name: 'Wedding', color: 'from-pink-500 to-rose-600' },
-    funeral: { icon: Flower2, name: 'Funeral', color: 'from-gray-500 to-slate-600' },
-    birthday: { icon: PartyPopper, name: 'Birthday', color: 'from-yellow-500 to-orange-600' },
-    business: { icon: Building2, name: 'Business', color: 'from-green-500 to-emerald-600' },
-    charity: { icon: Users, name: 'Charity', color: 'from-teal-500 to-cyan-600' },
-    conference: { icon: GraduationCap, name: 'Conference', color: 'from-purple-500 to-violet-600' },
-    other: { icon: Calendar, name: 'Other', color: 'from-gray-500 to-slate-600' }
+    SCHOOL: { icon: School, name: 'School Event', color: 'from-blue-500 to-indigo-600' },
+    WEDDING: { icon: Heart, name: 'Wedding', color: 'from-pink-500 to-rose-600' },
+    FUNERAL: { icon: Flower2, name: 'Funeral', color: 'from-gray-500 to-slate-600' },
+    BIRTHDAY: { icon: PartyPopper, name: 'Birthday', color: 'from-yellow-500 to-orange-600' },
+    BUSINESS: { icon: Building2, name: 'Business', color: 'from-green-500 to-emerald-600' },
+    CHARITY: { icon: Users, name: 'Charity', color: 'from-teal-500 to-cyan-600' },
+    CONFERENCE: { icon: GraduationCap, name: 'Conference', color: 'from-purple-500 to-violet-600' },
+    OTHER: { icon: Calendar, name: 'Other', color: 'from-gray-500 to-slate-600' }
   };
 
   // Payment method configuration
   const paymentMethodConfig = {
     momo: { name: 'MTN MoMo', icon: <Smartphone className="w-5 h-5" />, color: 'from-yellow-400 to-yellow-600' },
     om: { name: 'Orange Money', icon: <Smartphone className="w-5 h-5" />, color: 'from-orange-400 to-orange-600' },
-    visa: { name: 'Visa/Mastercard', icon: <CreditCard className="w-5 h-5" />, color: 'from-blue-400 to-blue-600' },
-    app_wallet: { name: 'App Wallet', icon: <Wallet className="w-5 h-5" />, color: 'from-purple-400 to-purple-600' }
+    card: { name: 'Visa/Mastercard', icon: <CreditCard className="w-5 h-5" />, color: 'from-blue-400 to-blue-600' },
+    bank: { name: 'Bank Transfer', icon: <Wallet className="w-5 h-5" />, color: 'from-purple-400 to-purple-600' }
   };
 
-  if (!eventData) {
+  // Show loading state
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading event details...</p>
+        </div>
       </div>
     );
   }
 
-  const colors = eventData.formColors;
-  const eventTypeInfo = eventTypeConfig[eventData.eventType as keyof typeof eventTypeConfig];
+  // Show error state
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Event Not Found</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no event data state
+  if (!eventData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading event details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const colors = eventData.formColor;  
+  const eventTypeInfo = eventTypeConfig[eventData.eventType.toUpperCase() as keyof typeof eventTypeConfig];
   const EventIcon = eventTypeInfo.icon;
 
   // Form validation
@@ -129,24 +155,32 @@ const ContributorView: React.FC = () => {
     let newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      // Validate personal information fields
+      // Validate personal information fields only
       eventData.fields
-        .filter(field => !field.id.startsWith('payment_') && !field.id.startsWith('phone_'))
+        .filter(field => {
+          // Exclude payment-related fields by label
+          const isContributionAmount = field.label.includes('Contribution Amount');
+          const isMomoPhone = field.label.includes('MTN MoMo Phone') || field.label.includes('MoMo Phone');
+          const isOrangePhone = field.label.includes('Orange Money Phone') || field.label.includes('OM Phone');
+          const isPaymentField = field.id.startsWith('payment_') || field.id.startsWith('phone_');
+          
+          return !(isContributionAmount || isMomoPhone || isOrangePhone || isPaymentField);
+        })
         .forEach(field => {
           if (field.required && !formValues[field.id]?.trim()) {
             newErrors[field.id] = `${field.label} is required`;
           }
           
           // Email validation
-          if (field.type === 'email' && formValues[field.id]) {
+          if (field.type === 'EMAIL' && formValues[field.id]) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(formValues[field.id])) {
               newErrors[field.id] = 'Please enter a valid email address';
             }
           }
           
-          // Phone validation
-          if (field.type === 'tel' && formValues[field.id]) {
+          // Phone validation for regular fields
+          if (field.type === 'TEL' && formValues[field.id]) {
             const phoneRegex = /^[6-9]\d{8}$/;
             if (!phoneRegex.test(formValues[field.id].replace(/\s+/g, ''))) {
               newErrors[field.id] = 'Please enter a valid phone number';
@@ -159,22 +193,48 @@ const ContributorView: React.FC = () => {
         newErrors['paymentMethod'] = 'Please select a payment method';
       }
       
-      const amountField = eventData.fields.find(f => f.id === 'payment_amount');
-      if (amountField && !formValues['payment_amount']) {
-        newErrors['payment_amount'] = 'Contribution amount is required';
-      } else if (amountField && formValues['payment_amount']) {
-        const amount = Number(formValues['payment_amount']);
+      // Find contribution amount field by label
+      const amountField = eventData.fields.find(f => 
+        f.label.includes('Contribution Amount') || f.id === 'payment_amount'
+      );
+      if (amountField && !formValues[amountField.id]) {
+        newErrors[amountField.id] = 'Contribution amount is required';
+      } else if (amountField && formValues[amountField.id]) {
+        const amount = Number(formValues[amountField.id]);
         if (amount < (amountField.min || 500)) {
-          newErrors['payment_amount'] = `Minimum contribution is ${amountField.min || 500} FCFA`;
+          newErrors[amountField.id] = `Minimum contribution is ${amountField.min || 500} FCFA`;
         }
       }
       
-      // Validate phone numbers for mobile money
-      if (selectedPaymentMethod === 'momo' && !formValues['phone_momo']) {
-        newErrors['phone_momo'] = 'MTN MoMo phone number is required';
+      // Validate phone numbers for mobile money by label
+      if (selectedPaymentMethod === 'momo') {
+        const momoField = eventData.fields.find(f => 
+          f.label.includes('MTN MoMo Phone') || f.label.includes('MoMo Phone') || f.id === 'phone_momo'
+        );
+        if (momoField && !formValues[momoField.id]) {
+          newErrors[momoField.id] = 'MTN MoMo phone number is required';
+        }
+        if (momoField && formValues[momoField.id]) {
+          const phoneRegex = /^[6-9]\d{8}$/;
+          if (!phoneRegex.test(formValues[momoField.id].replace(/\s+/g, ''))) {
+            newErrors[momoField.id] = 'Please enter a valid MTN MoMo phone number';
+          }
+        }
       }
-      if (selectedPaymentMethod === 'om' && !formValues['phone_om']) {
-        newErrors['phone_om'] = 'Orange Money phone number is required';
+      
+      if (selectedPaymentMethod === 'om') {
+        const omField = eventData.fields.find(f => 
+          f.label.includes('Orange Money Phone') || f.label.includes('OM Phone') || f.id === 'phone_om'
+        );
+        if (omField && !formValues[omField.id]) {
+          newErrors[omField.id] = 'Orange Money phone number is required';
+        }
+        if (omField && formValues[omField.id]) {
+          const phoneRegex = /^[6-9]\d{8}$/;
+          if (!phoneRegex.test(formValues[omField.id].replace(/\s+/g, ''))) {
+            newErrors[omField.id] = 'Please enter a valid Orange Money phone number';
+          }
+        }
       }
     }
 
@@ -193,7 +253,7 @@ const ContributorView: React.FC = () => {
 
   // Check if conditional field should be displayed
   const shouldDisplayField = (field: FormField) => {
-    if (field.type !== 'conditional' || !field.condition) return true;
+    if (field.type !== 'CONDITIONAL' || !field.condition) return true;
     const targetValue = formValues[field.condition.fieldId];
     return targetValue === field.condition.value;
   };
@@ -213,28 +273,48 @@ const ContributorView: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateStep(2)) return;
 
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Collect all contribution data
-    const contribution = {
-      eventSlug: slug,
-      eventType: eventData.eventType,
-      eventName: eventData.eventName,
-      contributorInfo: formValues,
-      paymentMethod: selectedPaymentMethod,
-      amount: formValues['payment_amount'],
-      timestamp: new Date().toISOString(),
-      receiptId: `RCP-${Date.now()}`
-    };
-    
-    setContributionData(contribution);
-    console.log('Contribution submitted:', contribution);
-    
-    setIsSubmitting(false);
-    setShowSuccess(true);
+    // Console log form values before submission
+    console.log('Form Values:', formValues);
+    console.log('Selected Payment Method:', selectedPaymentMethod);
+
+    setIsSubmitting(true);    
+    try {
+      // Find contribution amount field by label
+      const amountField = eventData.fields.find(f => 
+        f.label.includes('Contribution Amount') || f.id === 'payment_amount'
+      );
+      
+      const contributionPayload = {
+        eventSlug: `${eventType}/${eventSlug}`,
+        answers: formValues,
+        amount: amountField ? formValues[amountField.id] : formValues['payment_amount'],
+        paymentMethod: selectedPaymentMethod,
+      };
+      
+      console.log('Submitting contribution payload:', contributionPayload);
+
+      const response = await fetch('http://localhost:5000/api/contributions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contributionPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to submit contribution.');
+      }
+
+      setContributionData(result.data);
+      setShowSuccess(true);
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unknown error occurred during submission.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Generate receipt download
@@ -284,7 +364,7 @@ const ContributorView: React.FC = () => {
           {field.required && <span className="text-red-500 ml-1">*</span>}
         </label>
         
-        {field.type === 'select' ? (
+        {field.type === 'SELECT' ? (
           <select
             className={`w-full p-3 border-2 rounded-xl transition-all focus:ring-4 ${
               hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'focus:ring-opacity-20'
@@ -302,8 +382,8 @@ const ContributorView: React.FC = () => {
           </select>
         ) : (
           <input
-            type={field.type}
-            className={`w-full p-3 border-2 rounded-xl transition-all focus:ring-4 ${
+            type={field.type.toLowerCase()}
+            className={`w-full p-3 border-2  rounded-xl transition-all focus:ring-4 ${
               hasError ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'focus:ring-opacity-20'
             }`}
             style={{ 
@@ -312,9 +392,10 @@ const ContributorView: React.FC = () => {
             placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
             value={formValues[field.id] || ''}
             onChange={(e) => handleInputChange(field.id, e.target.value)}
-            min={field.type === 'number' ? field.min : undefined}
-            max={field.type === 'number' ? field.max : undefined}
+            min={field.type === 'NUMBER' ? field.min : undefined}
+            max={field.type === 'NUMBER' ? field.max : undefined}
             readOnly={field.readOnly}
+            required={field.required}
           />
         )}
         
@@ -431,7 +512,19 @@ const ContributorView: React.FC = () => {
               </div>
 
               {eventData.fields
-                .filter(field => !field.id.startsWith('payment_') && !field.id.startsWith('phone_'))
+                .filter(field => {
+                  // Check by field label since backend sends different IDs
+                  const isContributionAmount = field.label.includes('Contribution Amount');
+                  const isMomoPhone = field.label.includes('MTN MoMo Phone') || field.label.includes('MoMo Phone');
+                  const isOrangePhone = field.label.includes('Orange Money Phone') || field.label.includes('OM Phone');
+                  const isPaymentField = field.id.startsWith('payment_') || field.id.startsWith('phone_');
+                  
+                  const shouldExclude = isContributionAmount || isMomoPhone || isOrangePhone || isPaymentField;
+                  
+                  // Debug logging
+                  
+                  return !shouldExclude;
+                })
                 .map(field => renderField(field))}
             </motion.div>
           )}
@@ -455,7 +548,12 @@ const ContributorView: React.FC = () => {
 
               {/* Contribution Amount */}
               {eventData.fields
-                .filter(field => field.id === 'payment_amount')
+                .filter(field => {
+                  // Check by field label since backend sends different IDs
+                  const isContributionAmount = field.label.includes('Contribution Amount');
+                  const isPaymentField = field.id.startsWith('payment_') || field.id === 'payment_amount';
+                  return isContributionAmount || isPaymentField;
+                })
                 .map(field => renderField(field))}
 
               {/* Payment Method Selection */}
@@ -469,13 +567,15 @@ const ContributorView: React.FC = () => {
                 
                 <div className="grid grid-cols-1 gap-3">
                   {eventData.paymentMethods.map(method => {
-                    const methodInfo = paymentMethodConfig[method as keyof typeof paymentMethodConfig];
-                    const isSelected = selectedPaymentMethod === method;
+                    // Convert uppercase method to lowercase for consistent UI handling
+                    const methodKey = method.toLowerCase();
+                    const methodInfo = paymentMethodConfig[methodKey as keyof typeof paymentMethodConfig];
+                    const isSelected = selectedPaymentMethod === methodKey;
                     
                     return (
                       <motion.div
                         key={method}
-                        onClick={() => setSelectedPaymentMethod(method)}
+                        onClick={() => setSelectedPaymentMethod(methodKey)}
                         className={`flex items-center space-x-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
                           isSelected ? 'shadow-lg ring-4 ring-opacity-20' : 'hover:shadow-md'
                         }`}
@@ -532,10 +632,18 @@ const ContributorView: React.FC = () => {
                     className="space-y-4"
                   >
                     {eventData.fields
-                      .filter(field => 
-                        (selectedPaymentMethod === 'momo' && field.id === 'phone_momo') ||
-                        (selectedPaymentMethod === 'om' && field.id === 'phone_om')
-                      )
+                      .filter(field => {
+                        // Check by field label since backend sends different IDs
+                        const isMomoPhone = field.label.includes('MTN MoMo Phone') || field.label.includes('MoMo Phone');
+                        const isOrangePhone = field.label.includes('Orange Money Phone') || field.label.includes('OM Phone');
+                        const isOldStyleMomo = field.id === 'phone_momo';
+                        const isOldStyleOrange = field.id === 'phone_om';
+                        
+                        return (
+                          (selectedPaymentMethod === 'momo' && (isMomoPhone || isOldStyleMomo)) ||
+                          (selectedPaymentMethod === 'om' && (isOrangePhone || isOldStyleOrange))
+                        );
+                      })
                       .map(field => renderField(field))}
                   </motion.div>
                 )}
@@ -633,7 +741,7 @@ const ContributorView: React.FC = () => {
 
                 <div className="space-y-4">
                   {/* Download Receipt for School Events */}
-                  {eventData.eventType === 'school' && (
+                  {eventData.eventType === 'SCHOOL' && (
                     <motion.button
                       onClick={handleDownloadReceipt}
                       className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"

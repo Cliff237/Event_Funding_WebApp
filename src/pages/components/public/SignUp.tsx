@@ -147,15 +147,7 @@ const SignUp = () => {
       }
   
       // Redirect to login or dashboard
-      // navigate('/logIn');
-      
-      const result = response.data;
-      if (result.user.role === 'SUPER_ADMIN') {
-        navigate("/superAdmin/overview");
-      } else if (result.user.role === 'ORGANIZER' || result.user.role === 'SCHOOL_ADMIN') {
-        navigate("/overview");
-      }
-  
+      navigate('/overview');
   
     } catch (error: any) {
       console.error(error);

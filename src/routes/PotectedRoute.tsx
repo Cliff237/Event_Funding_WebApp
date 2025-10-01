@@ -2,17 +2,18 @@
 import { Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import type { ReactNode } from "react";
+import type { AppRole, UserRole, SchoolRole } from "./roles";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: string[];
+  allowedRoles?: AppRole[];
 }
 
-// Use a simple interface for the decoded JWT
 interface DecodedToken {
   id: number;
   name: string;
-  role: string;
+  role: UserRole;
+  schoolRoles?: { schoolId: number; role: SchoolRole }[];
   exp: number;
 }
 
@@ -24,16 +25,16 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     return <Navigate to="/login" replace />;
   }
 
-  console.log("Raw token from localStorage:", token);
-  console.log("Token length:", token.length);
+  // console.log("Raw token from localStorage:", token);
+  // console.log("Token length:", token.length);
 
   try {
     // Decode JWT from backend (JS)
     const decoded = jwtDecode<DecodedToken>(token);
-    console.log("Decoded token:", decoded);
-    console.log("Decoded token keys:", Object.keys(decoded));
+    // console.log("Decoded token:", decoded);
+    // console.log("Decoded token keys:", Object.keys(decoded));
 
-    // Check if the decoded token has the expected structure
+    // Check if the decoded token has the minimum required structure
     if (!decoded.id || !decoded.role || !decoded.name) {
       console.error("Token missing required fields:", { id: decoded.id, role: decoded.role, name: decoded.name });
       localStorage.removeItem("token");
@@ -48,10 +49,19 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
     }
 
     // Role-based access check
-    if (allowedRoles && !allowedRoles.includes(decoded.role)) {
-      console.log("User role:", decoded.role);
-      console.log("Allowed roles:", allowedRoles);
-      return <Navigate to="/unauthorized" replace />;
+    if (allowedRoles) {
+      // Get all roles the user has: their main role + all school roles.
+      const userRoles: AppRole[] = [decoded.role, ...(decoded.schoolRoles?.map(sr => sr.role) || [])];
+      
+      // Check if the user has at least one of the allowed roles.
+      const isAuthorized = allowedRoles.some(allowedRole => userRoles.includes(allowedRole));
+
+      if (!isAuthorized) {
+        console.log("User roles:", userRoles);
+        console.log("Allowed roles:", allowedRoles);
+        console.log("User is not authorized for this route.");
+        return <Navigate to="/unauthorized" replace />;
+      }
     }
 
     return <>{children}</>;

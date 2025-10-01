@@ -1,7 +1,7 @@
 // src/components/EventBuilder/types.ts
-export type FieldType = 'text' | 'number' | 'image'| 'select' | 'radio' | 'checkbox' | 'email' | 'tel' | 'file' | 'conditional';
-export type EventType = 'school' | 'wedding' | 'funeral' | 'birthday' | 'business' | 'charity' | 'conference' | 'other';
-export type PaymentMethod = 'momo' | 'om' | 'visa';
+export type FieldType = 'TEXT' | 'NUMBER' | 'IMAGE' | 'SELECT' | 'RADIO' | 'CHECKBOX' | 'EMAIL' | 'TEL' | 'FILE' | 'CONDITIONAL';
+export type EventType = 'SCHOOL' | 'WEDDING' | 'FUNERAL' | 'BIRTHDAY' | 'BUSINESS' | 'CHARITY' | 'CONFERENCE' | 'OTHER';
+export type PaymentMethod = 'MOMO' | 'OM' | 'CARD' | 'BANK';
 export type TransactionStatus = 'success' | 'pending' | 'failed';
 export type EventStatus =  'active' | 'completed' | 'cancelled' | 'locked' | 'paused';
 export type PaymentGetMethod = 'wallet' | 'momo' | 'om' | 'bank';
@@ -253,11 +253,11 @@ export interface EventFormData {
   eventType: EventType;
   schoolId?: string;
   organizerName: string;
-  organizerPassword: string;
+  organizerPassword?: string; // Made optional, not sent for public view
   eventName: string;
   fields: FormField[];
   paymentMethods: PaymentMethod[];
-  formColors: {
+  formColor: {
     primary: string;
     secondary: string;
     text: string;
@@ -265,8 +265,8 @@ export interface EventFormData {
   };
   eventTitle: string;
   eventDescription: string;
-  walletType: 'app_wallet' | 'bank_account';
-  bankAccountId?: string;
+  walletType: 'app_wallet' | 'direct';
+  bankAccountId?: string; // Made optional, not sent for public view
   fundraisingGoal: number;
   deadline: string;
   contributorMessage: string;

@@ -11,6 +11,6 @@
     "resolveJsonModule": true,
     "noImplicitAny": false
   },
-  "include": ["prisma/**/*.ts"],
+  "include": ["prisma/**/*.ts", "prisma/seed.js"],
   "exclude": ["node_modules", "dist"]
 }

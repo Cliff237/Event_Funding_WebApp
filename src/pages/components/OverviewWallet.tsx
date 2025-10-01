@@ -2,20 +2,46 @@ import { AnimatePresence, motion, type Variants } from 'framer-motion'
 import React, { useState, useEffect } from 'react'
 import type { EventWallet } from './Organizer/Events/type';
 import { Building2, CreditCard, Eye, Settings, Smartphone } from 'lucide-react';
+import { jwtDecode } from 'jwt-decode';
 
+interface DecodedToken {
+    id: number;
+    name: string;
+    role: string;
+    exp: number;
+}
 function OverviewWallet() {
   const [eventWallets, setEventWallets] = useState<EventWallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No auth token found in localStorage');
+      return;
+    }
   useEffect(() => {
     const fetchEventWallets = async () => {
       try {
-        const userId = 1; // Assume userId is 1 for now
-        const response = await fetch(`http://localhost:5000/api/events/wallet-summary/${userId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch event wallets');
+        const decoded = jwtDecode<DecodedToken>(token);
+        const userId = decoded.id;
+        
+        const response = await fetch(`http://localhost:5000/api/events/wallet-summary/${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.status === 401) {
+          // Handle unauthorized (e.g., redirect to login)
+          throw new Error('Session expired. Please log in again.');
         }
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to fetch event wallets');
+        }
+        
         const data = await response.json();
         setEventWallets(data);
       } catch (err) {

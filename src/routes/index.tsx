@@ -179,12 +179,13 @@ const router = createBrowserRouter([
     ],
   },
 
+  // Public pages
   { path: "/signup", element: <SignUp /> },
   { path: "/login", element: <LogIn /> },
   { path: "/unauthorized", element: <Unauthorized /> },
 
-  // Public page
+  // Event contribution page with eventType and eventSlug
   { path: "/customEvent", element: <CustomEvent /> },
-  { path: "/contribute/:slug", element: <ContributorView /> },
+  { path: "/event/:eventType/:eventSlug", element: <ContributorView /> },
 ]);
 export default router

@@ -7,11 +7,13 @@ const getMyEvents = async (req, res) => {
     const { userId } = req.params;
     const { page = 1, limit = 10, status = 'all', search = '' } = req.query;
 
-    // Validate user exists and get their role
+    // Validate user exists and get their role and school accesses
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
       include: {
-        school: true
+        schoolAccesses: {
+          include: { school: true }
+        }
       }
     });
 
@@ -19,22 +21,32 @@ const getMyEvents = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Build where clause based on user role
+    // Build where clause based on user role and school accesses
     let whereClause = {};
 
-    if (user.role === 'SCHOOL_ADMIN' && user.schoolId) {
-      // School admin sees their own events + school organizers' events
+    // Check if user is a school admin in any school
+    const schoolAdminAccesses = user.schoolAccesses.filter(access => access.role === 'SCHOOL_ADMIN');
+    const isSchoolAdmin = schoolAdminAccesses.length > 0;
+    const schoolIds = schoolAdminAccesses.map(access => access.schoolId);
+
+    // Check if user is a school organizer in any school
+    const schoolOrganizerAccesses = user.schoolAccesses.filter(access => access.role === 'SCHOOL_ORGANIZER');
+    const isSchoolOrganizer = schoolOrganizerAccesses.length > 0;
+    const organizerSchoolIds = schoolOrganizerAccesses.map(access => access.schoolId);
+
+    if (isSchoolAdmin) {
+      // School admin sees their own events + events from schools they administer
       whereClause = {
         OR: [
           { organizerId: parseInt(userId) },
-          { schoolId: user.schoolId }
+          { schoolId: { in: schoolIds } }
         ]
       };
-    } else if (user.role === 'SCHOOL_ORGANIZER' && user.schoolId) {
-      // School organizer sees only their events within their school
+    } else if (isSchoolOrganizer) {
+      // School organizer sees only their events within their schools
       whereClause = {
         organizerId: parseInt(userId),
-        schoolId: user.schoolId
+        schoolId: { in: organizerSchoolIds }
       };
     } else {
       // Regular organizer sees only their events
@@ -83,9 +95,7 @@ const getMyEvents = async (req, res) => {
             role: true
           }
         },
-        payments: {
-          where: { status: 'COMPLETED' }
-        },
+        payments: true, // Include all payments
         receipts: {
           include: {
             contribution: true
@@ -150,8 +160,8 @@ const getMyEvents = async (req, res) => {
         completionRate: progress,
         featuredContributors: featuredContributors.length > 0 ? featuredContributors : ['Anonymous Contributor'],
         isOwnEvent: event.organizerId === parseInt(userId),
-        organizerName: event.organizer.name,
-        organizerRole: event.organizer.role
+        organizerName: event.organizer?.name || 'N/A',
+        organizerRole: event.organizer?.role || 'N/A'
       };
     });
 
@@ -208,9 +218,7 @@ const toggleEventLock = async (req, res) => {
         status: event.isLocked ? 'APPROVED' : 'LOCKED' // You might want to add LOCKED status to your enum
       },
       include: {
-        payments: {
-          where: { status: 'COMPLETED' }
-        },
+        payments: true, // Include all payments
         receipts: true
       }
     });
@@ -296,12 +304,7 @@ const getEventStats = async (req, res) => {
         ]
       },
       include: {
-        payments: {
-          where: { status: 'COMPLETED' },
-          include: {
-            receipt: true
-          }
-        },
+        payments: true, // Include all payments
         receipts: {
           include: {
             contributor: true

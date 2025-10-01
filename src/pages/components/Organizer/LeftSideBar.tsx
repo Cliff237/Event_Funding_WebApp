@@ -29,6 +29,15 @@ interface User {
   role: string;
 }
 
+interface DecodedToken {
+  id: number;
+  name: string;
+  role: 'SUPER_ADMIN' | 'ORGANIZER';
+  schoolRoles?: {
+    schoolId: number;
+    role: 'SCHOOL_ADMIN' | 'SCHOOL_ORGANIZER';
+  }[];
+}
 interface LeftSideBarProps {
   isMobile?: boolean;
   onCloseMobile?: () => void;
@@ -55,11 +64,12 @@ function LeftSideBar({ isMobile = false, onCloseMobile }: LeftSideBarProps) {
 
   // Decode JWT to get role
   const token = localStorage.getItem("token");
-  let userRole: string | null = null;
+  let userRoles: string[] = [];
   if (token) {
     try {
-      const decoded: any = jwtDecode(token);
-      userRole = decoded.role || null;
+      const decoded = jwtDecode<DecodedToken>(token);
+      if (decoded.role) userRoles.push(decoded.role);
+      if (decoded.schoolRoles) userRoles.push(...decoded.schoolRoles.map(sr => sr.role));
     } catch (err) {
       console.error("Error decoding token:", err);
     }
@@ -165,7 +175,7 @@ function LeftSideBar({ isMobile = false, onCloseMobile }: LeftSideBarProps) {
 
   // Filter links by role
   const filteredLinks = sideBarLinks.filter(
-    (link) => !link.roles || (userRole && link.roles.includes(userRole))
+    (link) => !link.roles || link.roles.some(role => userRoles.includes(role))
   );
 
   // Handle logout

@@ -133,30 +133,67 @@ const AddSchoolModal: React.FC<AddSchoolModalProps> = ({ isOpen, onClose, onSubm
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validateStep(3)) {
-      const schoolData: Omit<SchoolRequest, 'id' | 'requestDate' | 'status'> = {
-        ...formData,
-        documents
-      };
-      onSubmit(schoolData);
-      onClose();
-      // Reset form
-      setFormData({
-        organizerName: '',
-        organizerEmail: '',
-        schoolName: '',
-        schoolType: '',
-        location: '',
-        phone: '',
-        website: '',
-        studentsCount: 0,
-        description: '',
-      });
-      setDocuments([]);
-      setUploadedFiles([]);
-      setCurrentStep(1);
-      setErrors({});
+      try {
+        const schoolData = {
+          organizerName: formData.organizerName,
+          organizerEmail: formData.organizerEmail,
+          schoolName: formData.schoolName,
+          schoolType: formData.schoolType,
+          location: formData.location,
+          phone: formData.phone,
+          website: formData.website,
+          studentsCount: formData.studentsCount,
+          description: formData.description,
+          documents
+        };
+
+        console.log('Submitting school application:', schoolData);
+
+        const response = await fetch('http://localhost:5000/api/school-applications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(schoolData),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Failed to submit school application');
+        }
+
+        console.log('School application submitted successfully:', result.data);
+        
+        // Show success message
+        alert('School application submitted successfully! You will receive an email notification once reviewed.');
+        
+        onSubmit(schoolData);
+        onClose();
+        
+        // Reset form
+        setFormData({
+          organizerName: '',
+          organizerEmail: '',
+          schoolName: '',
+          schoolType: '',
+          location: '',
+          phone: '',
+          website: '',
+          studentsCount: 0,
+          description: '',
+        });
+        setDocuments([]);
+        setUploadedFiles([]);
+        setCurrentStep(1);
+        setErrors({});
+        
+      } catch (error) {
+        console.error('Error submitting school application:', error);
+        alert('Failed to submit school application. Please try again.');
+      }
     }
   };
 
@@ -182,30 +219,31 @@ const AddSchoolModal: React.FC<AddSchoolModalProps> = ({ isOpen, onClose, onSubm
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <motion.div
-        className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+       <div className="relative bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <School className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Add Your School</h2>
-              <p className="text-gray-600">Submit your school information for approval</p>
+              <h2 className="text-2xl font-bold text-gray-200">Add Your School</h2>
+              <p className="text-gray-400">Submit your school information for approval</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+        
         </div>
 
         <div className="p-6">

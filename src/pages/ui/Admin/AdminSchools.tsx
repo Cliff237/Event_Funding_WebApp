@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, School, CheckCircle, XCircle, Eye, Mail, Upload, X, User, Key, MessageSquare, FileText, AlertTriangle, Send, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AdminSchoolRequest from '../../components/Admin/AdminSchoolRequest';
 import type { SchoolRequest, ApprovedSchool, ValidationForm, RejectionForm } from '../../components/Organizer/Events/type';
+import { 
+  fetchAllSchoolApplications, 
+  fetchAllSchools, 
+  approveSchoolApplication, 
+  rejectSchoolApplication 
+} from '../../../utils/schoolApplicationApi';
 
 // Types
 
@@ -15,6 +21,8 @@ const SuperAdminSchools = () => {
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const [validationForm, setValidationForm] = useState<ValidationForm>({
     logo: null,
@@ -28,163 +36,47 @@ const SuperAdminSchools = () => {
     customMessage: ''
   });
 
-  // Mock school requests data
-  const [schoolRequests, setSchoolRequests] = useState<SchoolRequest[]>([
-    {
-      id: 1,
-      organizerName: "Marie Tchinda",
-      organizerEmail: "marie.tchinda@gmail.com",
-      schoolName: "Institut Saint-Joseph Douala",
-      schoolType: "Private Catholic School",
-      location: "Douala, Littoral",
-      phone: "+237 672 345 678",
-      website: "www.saintjoseph-douala.edu.cm",
-      studentsCount: 850,
-      description: "Established Catholic institution providing quality bilingual education from kindergarten to high school.",
-      documents: [
-        { name: "School Registration Certificate", type: "pdf", url: "#" },
-        { name: "Tax Clearance Certificate", type: "pdf", url: "#" },
-        { name: "Director's ID Card", type: "jpg", url: "#" }
-      ],
-      requestDate: "2024-08-28T10:30:00Z",
-      status: "pending",
-    },
-    {
-      id: 2,
-      organizerName: "Paul Ngono",
-      organizerEmail: "paul.ngono@yahoo.com",
-      schoolName: "Collège Technique de Yaoundé",
-      schoolType: "Public Technical College",
-      location: "Yaoundé, Centre",
-      phone: "+237 699 123 456",
-      website: "",
-      studentsCount: 1200,
-      description: "Technical college specializing in engineering and computer science programs.",
-      documents: [
-        { name: "Government Authorization Letter", type: "pdf", url: "#" },
-        { name: "School Infrastructure Report", type: "pdf", url: "#" }
-      ],
-      requestDate: "2024-08-25T14:15:00Z",
-      status: "pending",
-    },
-    {
-      id: 3,
-      organizerName: "Dr. Amina Hassan",
-      organizerEmail: "amina.hassan@education.cm",
-      schoolName: "École Primaire Bilingue de Bamenda",
-      schoolType: "Public Primary School",
-      location: "Bamenda, North West",
-      phone: "+237 678 901 234",
-      website: "www.epb-bamenda.edu.cm",
-      studentsCount: 450,
-      description: "Bilingual primary school committed to providing quality education in both English and French to children in the North West region.",
-      documents: [
-        { name: "School Registration Certificate", type: "pdf", url: "#" },
-        { name: "Tax Clearance Certificate", type: "pdf", url: "#" },
-        { name: "Director's ID Card", type: "jpg", url: "#" },
-        { name: "Academic License", type: "pdf", url: "#" }
-      ],
-      requestDate: "2024-08-30T09:15:00Z",
-      status: "pending",
-    },
-    {
-      id: 4,
-      organizerName: "Jean-Baptiste Mvondo",
-      organizerEmail: "jb.mvondo@lycee-ebolowa.edu.cm",
-      schoolName: "Lycée Classique d'Ebolowa",
-      schoolType: "Public High School",
-      location: "Ebolowa, South",
-      phone: "+237 655 432 109",
-      website: "",
-      studentsCount: 980,
-      description: "Classical high school offering comprehensive secondary education with focus on sciences and humanities.",
-      documents: [
-        { name: "School Registration Certificate", type: "pdf", url: "#" },
-        { name: "Government Authorization Letter", type: "pdf", url: "#" },
-        { name: "Director's ID Card", type: "jpg", url: "#" },
-        { name: "School Infrastructure Report", type: "pdf", url: "#" }
-      ],
-      requestDate: "2024-09-01T16:45:00Z",
-      status: "pending",
-    }
-  ]);
+  // School requests data from backend
+  const [schoolRequests, setSchoolRequests] = useState<SchoolRequest[]>([]);
 
-  // Mock approved schools data
-  const [approvedSchools, setApprovedSchools] = useState<ApprovedSchool[]>([
-    {
-      id: 1,
-      name: "Lycée Bilingue de Yaoundé",
-      type: "Public Bilingual High School",
-      location: "Yaoundé, Centre",
-      adminName: "Jean Mballa",
-      adminEmail: "jean.mballa@lycee-yaounde.edu.cm",
-      studentsCount: 1500,
-      eventsCount: 25,
-      logo: "https://api.dicebear.com/7.x/shapes/svg?seed=LyceeYaounde",
-      approvedDate: "2024-01-15T10:30:00Z",
-      status: "active",
-      phone: "+237 677 123 456",
-      website: "www.lycee-yaounde.edu.cm"
-    },
-    {
-      id: 2,
-      name: "Collège Français de Douala",
-      type: "Private French School",
-      location: "Douala, Littoral",
-      adminName: "Marie Dupont",
-      adminEmail: "marie.dupont@college-douala.edu.cm",
-      studentsCount: 800,
-      eventsCount: 18,
-      logo: "https://api.dicebear.com/7.x/shapes/svg?seed=CollegeDouala",
-      approvedDate: "2024-02-20T14:20:00Z",
-      status: "active",
-      phone: "+237 699 987 654",
-      website: "www.college-francais-douala.edu.cm"
-    }
-  ]);
+  // Approved schools data from backend
+  const [approvedSchools, setApprovedSchools] = useState<ApprovedSchool[]>([]);
 
-  // Mock rejected schools data
-  const [rejectedSchools, setRejectedSchools] = useState<(SchoolRequest & { rejectionReason: string; rejectionDate: string })[]>([
-    {
-      id: 5,
-      organizerName: "Samuel Nkomo",
-      organizerEmail: "samuel.nkomo@gmail.com",
-      schoolName: "Institut Privé de Bertoua",
-      schoolType: "Private Institute",
-      location: "Bertoua, East",
-      phone: "+237 654 321 987",
-      website: "",
-      studentsCount: 300,
-      description: "Private institute focusing on technical education and vocational training.",
-      documents: [
-        { name: "School Registration Certificate", type: "pdf", url: "#" },
-        { name: "Director's ID Card", type: "jpg", url: "#" }
-      ],
-      requestDate: "2024-08-20T11:30:00Z",
-      status: "rejected",
-      rejectionReason: "Incomplete documentation",
-      rejectionDate: "2024-08-22T14:30:00Z"
-    },
-    {
-      id: 6,
-      organizerName: "Grace Mbeki",
-      organizerEmail: "grace.mbeki@yahoo.com",
-      schoolName: "Académie Moderne de Garoua",
-      schoolType: "Private Academy",
-      location: "Garoua, North",
-      phone: "+237 698 765 432",
-      website: "www.academie-garoua.com",
-      studentsCount: 200,
-      description: "Modern academy providing bilingual education with focus on technology and innovation.",
-      documents: [
-        { name: "School Registration Certificate", type: "pdf", url: "#" }
-      ],
-      requestDate: "2024-08-18T09:15:00Z",
-      status: "rejected",
-      rejectionReason: "Does not meet requirements",
-      rejectionDate: "2024-08-21T16:45:00Z"
+  // Rejected schools data from backend
+  const [rejectedSchools, setRejectedSchools] = useState<(SchoolRequest & { rejectionReason: string; rejectionDate: string })[]>([]);
+
+  // Fetch data from backend
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch pending applications
+      const pendingApplications = await fetchAllSchoolApplications('pending');
+      setSchoolRequests(pendingApplications);
+
+      // Fetch rejected applications
+      const rejectedApplications = await fetchAllSchoolApplications('rejected');
+      setRejectedSchools(rejectedApplications.map((app: any) => ({
+        ...app,
+        rejectionReason: 'Reason not specified', // You might want to store this in your DB
+        rejectionDate: app.requestDate
+      })));
+
+      // Fetch approved schools
+      const schools = await fetchAllSchools();
+      setApprovedSchools(schools);
+
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setError('Failed to load data. Please try again.');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const generatePassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%';
@@ -207,8 +99,17 @@ const SuperAdminSchools = () => {
       schoolAdminName: '',
       password: generatePassword(),
       customMessage: `Dear ${request.organizerName},\n\nCongratulations! Your request to add "${request.schoolName}"
-       to our platform has been approved.\n\nYour school admin credentials:\nUsername: ${request.organizerEmail}\nPassword: [PASSWORD]
-       \n\nYou can now log in to manage your school's events.\n\nBest regards,\nPlatform Admin Team`
+       to our platform has been approved.
+
+Your school admin credentials:
+Username: ${request.organizerEmail}
+Password: [PASSWORD]
+       
+
+You can now log in to manage your school's events.
+
+Best regards,
+Platform Admin Team`
     });
     setShowValidationModal(true);
   };
@@ -233,41 +134,51 @@ const SuperAdminSchools = () => {
     }
   };
 
-  const submitValidation = () => {
-    const newSchool: ApprovedSchool = {
-      id: Date.now(),
-      name: (selectedRequest as SchoolRequest).schoolName,
-      type: (selectedRequest as SchoolRequest).schoolType,
-      location: (selectedRequest as SchoolRequest).location,
-      adminName: validationForm.schoolAdminName,
-      adminEmail: (selectedRequest as SchoolRequest).organizerEmail,
-      studentsCount: (selectedRequest as SchoolRequest).studentsCount,
-      eventsCount: 0,
-      logo: validationForm.logo ? URL.createObjectURL(validationForm.logo) : `https://api.dicebear.com/7.x/shapes/svg?seed=${(selectedRequest as SchoolRequest).schoolName}`,
-      approvedDate: new Date().toISOString(),
-      status: "active",
-      phone: (selectedRequest as SchoolRequest).phone,
-      website: (selectedRequest as SchoolRequest).website
-    };
+  const submitValidation = async () => {
+    try {
+      setLoading(true);
+      const approvalData = {
+        customMessage: validationForm.customMessage,
+        logo: validationForm.logo ? URL.createObjectURL(validationForm.logo) : null,
+        schoolAdminName: validationForm.schoolAdminName
+      };
 
-    setApprovedSchools(prev => [...prev, newSchool]);
-    setSchoolRequests(prev => prev.filter(req => req.id !== (selectedRequest as SchoolRequest).id));
-    setShowValidationModal(false);
-    setSelectedRequest(null);
+      await approveSchoolApplication((selectedRequest as SchoolRequest).id, approvalData);
+      
+      // Reload data after approval
+      await loadData();
+      
+      setShowValidationModal(false);
+      setSelectedRequest(null);
+    } catch (error) {
+      console.error('Error approving school:', error);
+      setError('Failed to approve school. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const submitRejection = () => {
-    const rejectedSchool = {
-      ...(selectedRequest as SchoolRequest),
-      rejectionReason: rejectionForm.reason,
-      rejectionDate: new Date().toISOString(),
-      status: "rejected" as const
-    };
+  const submitRejection = async () => {
+    try {
+      setLoading(true);
+      const rejectionData = {
+        reason: rejectionForm.reason,
+        customMessage: rejectionForm.customMessage
+      };
 
-    setRejectedSchools(prev => [...prev, rejectedSchool]);
-    setSchoolRequests(prev => prev.filter(req => req.id !== (selectedRequest as SchoolRequest).id));
-    setShowRejectionModal(false);
-    setSelectedRequest(null);
+      await rejectSchoolApplication((selectedRequest as SchoolRequest).id, rejectionData);
+      
+      // Reload data after rejection
+      await loadData();
+      
+      setShowRejectionModal(false);
+      setSelectedRequest(null);
+    } catch (error) {
+      console.error('Error rejecting school:', error);
+      setError('Failed to reject school. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredRequests = schoolRequests.filter(request =>
@@ -344,6 +255,8 @@ const SuperAdminSchools = () => {
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-800 to-indigo-800 text-transparent bg-clip-text">Schools Management</h1>
             <p className="text-gray-600 mt-1">Manage school requests and approved institutions.</p>
+            {loading && <p className="text-blue-600 mt-1">Loading...</p>}
+            {error && <p className="text-red-600 mt-1">{error}</p>}
           </div>
         </div>
       </div>
@@ -561,7 +474,7 @@ const SuperAdminSchools = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <img
-                              
+                              src={item.logo || `https://api.dicebear.com/7.x/shapes/svg?seed=${item.name}`}
                               alt={item.name}
                               className="h-10 w-10  rounded-lg object-cover mr-3"
                             />

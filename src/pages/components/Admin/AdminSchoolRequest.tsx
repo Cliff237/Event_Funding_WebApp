@@ -1,6 +1,7 @@
 import type { SchoolRequest, ApprovedSchool } from '../Organizer/Events/type';
 import { motion } from 'framer-motion';
 import { XCircle, MapPin, Phone, Globe, Building, User, Calendar, FileText, CheckCircle, X, School, Mail, Download, ExternalLink, Users, Award, Clock } from 'lucide-react';
+import { useState } from 'react';
 
 interface AdminSchoolRequestProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export default function AdminSchoolRequest({
   handleValidateRequest,
   formatDate
 }: AdminSchoolRequestProps) {
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   if (!isOpen) return null;
 
   const schoolName = (activeTab === 'requests' || activeTab === 'rejected')
@@ -32,6 +35,85 @@ export default function AdminSchoolRequest({
   const schoolType = (activeTab === 'requests' || activeTab === 'rejected')
     ? (selectedRequest as SchoolRequest).schoolType 
     : (selectedRequest as ApprovedSchool).type;
+
+  const handleApprove = async () => {
+    if (isProcessing) return;
+    
+    try {
+      setIsProcessing(true);
+      
+      const response = await fetch(`http://localhost:5000/api/school-applications/${selectedRequest.id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          customMessage: 'Congratulations! Your school has been approved and added to our platform.',
+          logo: null
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to approve application');
+      }
+
+      console.log('Application approved successfully:', result.data);
+      alert(`School approved successfully! Access code: ${result.data.schoolCode}`);
+      
+      setShowDetailsModal(false);
+      handleValidateRequest(selectedRequest as SchoolRequest);
+      
+    } catch (error) {
+      console.error('Error approving application:', error);
+      alert('Failed to approve application. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (isProcessing) return;
+    
+    const reason = prompt('Please provide a reason for rejection:');
+    if (!reason) return;
+    
+    try {
+      setIsProcessing(true);
+      
+      const response = await fetch(`http://localhost:5000/api/school-applications/${selectedRequest.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          reason,
+          customMessage: `We regret to inform you that your school application has been rejected. Reason: ${reason}`
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to reject application');
+      }
+
+      console.log('Application rejected successfully');
+      alert('Application rejected successfully.');
+      
+      setShowDetailsModal(false);
+      handleRejectRequest(selectedRequest as SchoolRequest);
+      
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      alert('Failed to reject application. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -273,24 +355,20 @@ export default function AdminSchoolRequest({
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => {
-                    setShowDetailsModal(false);
-                    handleRejectRequest(selectedRequest as SchoolRequest);
-                  }}
-                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 transition-colors"
+                  onClick={handleReject}
+                  disabled={isProcessing}
+                  className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <XCircle className="w-4 h-4" />
-                  Reject Request
+                  {isProcessing ? 'Processing...' : 'Reject Request'}
                 </button>
                 <button
-                  onClick={() => {
-                    setShowDetailsModal(false);
-                    handleValidateRequest(selectedRequest as SchoolRequest);
-                  }}
-                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
+                  onClick={handleApprove}
+                  disabled={isProcessing}
+                  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Approve Request
+                  {isProcessing ? 'Processing...' : 'Approve Request'}
                 </button>
               </div>
             </div>

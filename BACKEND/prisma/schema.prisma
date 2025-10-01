@@ -4,14 +4,30 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
 }
 
+// --------------------------------------------------------
+// CORE ENUMS
+// --------------------------------------------------------
+
+// Platform-level roles
 enum Role {
-  SUPER_ADMIN
-  SCHOOL_ADMIN
-  SCHOOL_ORGANIZER
-  ORGANIZER
+  SUPER_ADMIN // Platform Admin who processes school applications
+  ORGANIZER   // Standard user/organizer (can create non-school events)
+}
+
+// School-specific roles (used in the SchoolOrganizer join table)
+enum SchoolAccessRole {
+  SCHOOL_ADMIN      // The person who manages the school's access code and other organizers
+  SCHOOL_ORGANIZER   // A standard organizer who can create and manage events for that school
+}
+
+// Status of a school application
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum EventStatus {
@@ -25,15 +41,14 @@ enum EventStatus {
 enum FieldType {
   TEXT
   NUMBER
+  EMAIL
+  TEL
   SELECT
   RADIO
   CHECKBOX
-  EMAIL
-  TEL
   FILE
   IMAGE
 }
-
 enum PaymentMethod {
   MOMO
   OM
@@ -45,11 +60,9 @@ enum EventType{
   WEDDING
   FUNERAL
   BIRTHDAY
-  CHARITY
   BUSINESS
+  CHARITY
   CONFERENCE
-  CEREMONY
-  CONCERT
   OTHER
 }
 enum PaymentStatus {
@@ -58,151 +71,242 @@ enum PaymentStatus {
   FAILED
 }
 
-model User {
-  id       Int     @id @default(autoincrement())
-  name     String
-  email    String  @unique
-  password String
-  profile  String?
-  role     Role    @default(ORGANIZER)
-  schoolId Int?
-  school   School? @relation(fields: [schoolId], references: [id])
+// --------------------------------------------------------
+// MAIN MODELS
+// --------------------------------------------------------
 
+model User {
+  id              Int               @id @default(autoincrement())
+  name            String
+  email           String            @unique
+  password        String
+  profile         String?
+  
+  // Platform-level role.
+  role            Role              @default(ORGANIZER)
+  
+  // New Relationships for the School System
+  schoolAccesses  SchoolOrganizer[]   // Accesses/roles the user has in different schools (M:N)
+  applications    SchoolApplication[] // Applications submitted by this user
+  
+  // Existing Relationships
   events          Event[]
   receipts        Receipt[]
   notifications   Notification[]
   payoutConfigs   PayoutConfig[]
   transactionLogs TransactionLog[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 }
 
 model School {
-  id       Int     @id @default(autoincrement())
-  name     String
-  address  String?
-  logo     String?
-  email    String  @unique
-  city     String?
-  code     String? // assigned by superadmin
-  approved Boolean @default(false)
+  id                Int               @id @default(autoincrement())
+  name              String
+  address           String?
+  logo              String?
+  email             String            @unique
+  city              String?
+  
+  // This is the "special code" (Admin Access Code)
+  code              String?           @unique
+  approved          Boolean           @default(false)
 
-  admins User[]
-  events Event[]
+  // Link: School must link back to the application that led to its creation
+  applicationId     Int               @unique
+  application       SchoolApplication @relation(fields: [applicationId], references: [id])
+  
+  // Relation: Organizers associated with this school (M:N relationship)
+  organizers        SchoolOrganizer[] 
+  
+  // Existing Relationships
+  events            Event[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  @@unique([name, city]) // Ensure school name is unique per city
 }
 
+
+// --------------------------------------------------------
+// APPLICATION FLOW MODELS
+// --------------------------------------------------------
+
+model SchoolApplication {
+  id                  Int               @id @default(autoincrement())
+  schoolName          String
+  city                String
+  contactName         String
+  contactEmail        String
+  // Add field for location description as per requirements
+  locationDescription String?
+  // Add field for documents (array of strings/json to store URLs)
+  documents           Json?
+  
+  status              ApplicationStatus @default(PENDING)
+  createdAt           DateTime          @default(now())
+  
+  // Link to the user who sent the application
+  applicantId         Int
+  applicant           User              @relation(fields: [applicantId], references: [id])
+  
+  // Link to the created School (only present if APPROVED)
+  approvedSchool      School?
+}
+
+
+// --------------------------------------------------------
+// ROLE MANAGEMENT MODEL (The Key to Permissions)
+// --------------------------------------------------------
+
+// This join table defines a User's specific role within a specific School.
+model SchoolOrganizer {
+  // Composite ID based on the user and the school
+  userId    Int
+  schoolId  Int
+  
+  // The role the user has for this specific school
+  role      SchoolAccessRole @default(SCHOOL_ORGANIZER) 
+  assignedAt DateTime @default(now())
+  
+  // Relationships
+  user      User      @relation(fields: [userId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
+  
+  @@id([userId, schoolId]) // Composite primary key
+}
+
+
+// --------------------------------------------------------
+// EXISTING MODELS
+// --------------------------------------------------------
+
 model Event {
-  id             Int         @id @default(autoincrement())
-  title          String
-  description    String?
-  type           EventType
-  status         EventStatus @default(PENDING)
-  isLocked       Boolean     @default(false)
-  date           DateTime?
-  location       String?
-  image          String?
-  paymentMethods Json? 
-  theme          Json?
-  eventLink      String     @unique
-  organizerId    Int
-  schoolId       Int?
-  organizer      User        @relation(fields: [organizerId], references: [id])
-  school         School?     @relation(fields: [schoolId], references: [id])
+  id              Int           @id @default(autoincrement())
+  title           String
+  name            String        @unique
+  description     String?
+  type            EventType
+  status          EventStatus   @default(PENDING)
+  isLocked        Boolean       @default(false)
+  date            DateTime?
+  location        String?
+  image           String?
+  paymentMethods  Json?  
+  formColor       Json?
+  contributorMessage String?
+  fundraisingGoal Float?
+  deadline        DateTime?
+  walletType      String?       // 'app_wallet' | 'direct'
+  receiptConfig   Json?  
+  eventLink       String        @unique
+  
+  // Link to the organizer who created the event
+  organizerId     Int?
+  organizer       User?         @relation(fields: [organizerId], references: [id])
+  
+  // Link to the school hosting the event
+  schoolId        Int?
+  school          School?       @relation(fields: [schoolId], references: [id])
 
   fields          EventField[]
   receipts        Receipt[]
   payments        Payment[]
   notifications   Notification[]
   transactionLogs TransactionLog[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  @@unique([organizerId, eventLink])
+  @@index([organizerId])
+  @@index([schoolId])
+  @@index([status])
 }
 
 model EventField {
-  id           Int       @id @default(autoincrement())
-  eventId      Int
-  label        String
-  fieldType    FieldType
-  required     Boolean   @default(true)
-  readOnly     Boolean   @default(false)
-  defaultValue String?
-  options      Json?
-  min          Int?
-  max          Int?
-  fixedValue   Boolean?  @default(false)
-  conditional  Json?
+  id            Int         @id @default(autoincrement())
+  eventId       Int
+  label         String
+  fieldType     FieldType
+  required      Boolean     @default(true)
+  readOnly      Boolean     @default(false)
+  defaultValue  String?
+  placeholder   String?
+  options       Json?
+  min           Int?
+  max           Int?
+  fixedValue    Boolean?    @default(false)
+  conditional   Json?
 
-  event Event @relation(fields: [eventId], references: [id])
+  event         Event @relation(fields: [eventId], references: [id])
 }
 
 model Payment {
-  id      Int           @id @default(autoincrement())
-  answers Json // dynamic responses
-  amount  Float
-  method  PaymentMethod
-  status  PaymentStatus @default(PENDING)
+  id          Int             @id @default(autoincrement())
+  answers     Json            // dynamic responses
+  amount      Float
+  method      PaymentMethod
+  eventId     Int
+  event       Event           @relation(fields: [eventId], references: [id])
+  receipt     Receipt?
 
-  eventId Int
-  event   Event    @relation(fields: [eventId], references: [id])
-  receipt Receipt?
-
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 }
 
 model Receipt {
-  id          Int      @id @default(autoincrement())
-  receiptData Json
-  qrCode      String?
-  paidAt      DateTime
+  id              Int       @id @default(autoincrement())
+  receiptData     Json
+  qrCode          String?
+  paidAt          DateTime
+  layout          String?  
+  align           String?     
+  showDividers    Boolean   @default(true)
+  accentColor     String?     
+  includeFields   Json?     
+  additionalFields Json?     
+  schoolInfo      Json?
+  eventId         Int
+  event           Event     @relation(fields: [eventId], references: [id])
 
-  eventId Int
-  event   Event @relation(fields: [eventId], references: [id])
+  contributorId   Int
+  contributor     User      @relation(fields: [contributorId], references: [id])
 
-  contributorId Int
-  contributor   User @relation(fields: [contributorId], references: [id])
+  contributionId  Int?      @unique
+  contribution    Payment?  @relation(fields: [contributionId], references: [id])
 
-  contributionId Int?     @unique
-  contribution   Payment? @relation(fields: [contributionId], references: [id])
-
-  customFields Json
-  schoolName   String
-  schoolLogo   String?
-  eventTitle   String
+  customFields    Json
+  schoolName      String
+  schoolLogo      String?
+  eventTitle      String
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
 
-  userId  Int
-  user    User   @relation(fields: [userId], references: [id])
-  eventId Int?
-  event   Event? @relation(fields: [eventId], references: [id])
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  eventId   Int?
+  event     Event?    @relation(fields: [eventId], references: [id])
 }
 
 model PayoutConfig {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   organizerId Int
-  organizer   User     @relation(fields: [organizerId], references: [id])
-  type        String // WALLET, BANK, MOMO, OM
+  organizer   User      @relation(fields: [organizerId], references: [id])
+  type        String    // WALLET, BANK, MOMO, OM
   accountInfo Json
   createdAt   DateTime @default(now())
 }
 
 model TransactionLog {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   userId    Int?
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?     @relation(fields: [userId], references: [id])
   eventId   Int?
-  event     Event?   @relation(fields: [eventId], references: [id])
-  action    String
+  event     Event?    @relation(fields: [eventId], references: [id])
+  action    String?
   details   Json?
   createdAt DateTime @default(now())
 }

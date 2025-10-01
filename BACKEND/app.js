@@ -4,7 +4,10 @@ import dotenv from 'dotenv';
 // Import the event routes
 import authRoutes from './src/routes/authRoute.js';
 import eventRoutes from './src/routes/eventRoute.js';
+import eventCreateRoutes from './src/routes/eventCreateRoute.js';
 import schoolAdminRoutes from './src/routes/schoolAdminRoute.js';
+import contributionRoutes from './src/routes/contributionRoute.js';
+import schoolApplicationRoutes from './src/routes/schoolApplicationRoute.js';
 
 dotenv.config();
 
@@ -16,8 +19,11 @@ app.use(express.json());
 
 // Routes
 app.use('/api/events', eventRoutes);
+app.use('/api/create', eventCreateRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/school-admin', schoolAdminRoutes);
+app.use('/api/contributions', contributionRoutes);
+app.use('/api/school-applications', schoolApplicationRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {

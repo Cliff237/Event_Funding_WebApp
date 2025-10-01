@@ -1,18 +1,24 @@
 import express from 'express';
-import { getOrganizerOverview, getEventWalletSummary } from '../controllers/eventController.js';
+import { getOrganizerOverview, getEventWalletSummary, getEventByTypeAndSlug } from '../controllers/eventController.js';
 import { getMyEvents, toggleEventLock, deleteEvent, getEventStats } from '../controllers/myEventsController.js';
+import { authenticate } from '../middlewares/authMiddleware.js';
+
 const router = express.Router();
 
-// Get organizer overview statistics
-router.get('/overview/:userId', getOrganizerOverview);
+// Public routes (no authentication required)
+router.get('/public/:eventType/:eventSlug', getEventByTypeAndSlug);
 
-// Get event wallet summary
+// Protected routes (require authentication)
+router.use(authenticate);
+
+// Event management routes
+router.get('/overview/:userId', getOrganizerOverview);
 router.get('/wallet-summary/:userId', getEventWalletSummary);
-// New MyEvents routes
 router.get('/my-events/:userId', getMyEvents);
 router.patch('/toggle-lock/:userId/:eventId', toggleEventLock);
 router.delete('/:userId/:eventId', deleteEvent);
 router.get('/stats/:userId/:eventId', getEventStats);
+
 // Health check for events route
 router.get('/health', (req, res) => {
   res.status(200).json({ message: 'Events route is healthy!' });

@@ -2,17 +2,41 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React, { useMemo, useRef, useState } from 'react';
 import type { Align, EventFormData, FormField, ReceiptLayout } from '../../components/Organizer/Events/type';
 import { CheckCircle,  Copy,  Facebook,  MessageCircle,  Plus,  QrCode,  Trash2,  GripVertical,  Link as LinkIcon,  Image as ImageIcon,  Palette} from 'lucide-react';
+import { toast } from 'react-toastify';
 
-interface ReceiptProps {
+interface Props {
   formData: EventFormData;
   setFormData: React.Dispatch<React.SetStateAction<EventFormData>>;
+  showConfirmation?: boolean;
+  setShowConfirmation?: React.Dispatch<React.SetStateAction<boolean>>;
+  showShareModal?: boolean;
+  setShowShareModal?: React.Dispatch<React.SetStateAction<boolean>>;
+  ShareModalCard?: boolean;
+  setShowShareModalCard?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-function CreateReceiptCustomization({ formData, setFormData }: ReceiptProps) {
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [ShareModalCard, setShowShareModalCard] = useState(false);
+function CreateReceiptCustomization({ 
+  formData, 
+  setFormData, 
+  showConfirmation: externalShowConfirmation,
+  setShowConfirmation: externalSetShowConfirmation,
+  showShareModal: externalShowShareModal,
+  setShowShareModal: externalSetShowShareModal,
+  ShareModalCard: externalShareModalCard,
+  setShowShareModalCard: externalSetShowShareModalCard
+}: Props) {
+  // Use external state if provided, otherwise use internal state
+  const [internalShowConfirmation, setInternalShowConfirmation] = useState(false);
+  const [internalShowShareModal, setInternalShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const showConfirmation = externalShowConfirmation ?? internalShowConfirmation;
+  const setShowConfirmation = externalSetShowConfirmation ?? setInternalShowConfirmation;
+  const showShareModal = externalShowShareModal ?? internalShowShareModal;
+  const setShowShareModal = externalSetShowShareModal ?? setInternalShowShareModal;
+  const ShareModalCard = externalShareModalCard ?? false;
+  const setShowShareModalCard = externalSetShowShareModalCard ?? (() => {});
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -50,10 +74,59 @@ function CreateReceiptCustomization({ formData, setFormData }: ReceiptProps) {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleConfirmEvent = () => {
-    // Submit to backend here
-    console.log('Complete Event Data:', formData);
-    setShowConfirmation(false);
+  const handleConfirmEvent = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare data for backend
+      const eventData = {
+        eventType: formData.eventType,
+        eventName: formData.eventName,
+        eventTitle: formData.eventTitle,
+        eventDescription: formData.eventDescription,
+        schoolId: formData.schoolId,
+        formColors: formData.formColors,
+        paymentMethods: formData.paymentMethods,
+        walletType: formData.walletType,
+        fundraisingGoal: formData.fundraisingGoal,
+        deadline: formData.deadline,
+        contributorMessage: formData.contributorMessage,
+        receiptConfig: formData.receiptConfig,
+        fields: formData.fields
+      };
+      
+      // Get JWT token from localStorage (if user is authenticated)
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('http://localhost:5000/api/create/event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(eventData)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to create event');
+      }
+      
+      console.log('Event created successfully:', result);
+      
+      // Show success message or redirect
+      setShowConfirmation(false);
+      setShowShareModal(true);
+      
+    } catch (error) {
+      console.error('Error creating event:', error);
+      // You might want to show an error message to the user here
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast.error(`Error creating event: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ---- Drag & Drop for includeFields ----
@@ -556,14 +629,21 @@ function CreateReceiptCustomization({ formData, setFormData }: ReceiptProps) {
                     Cancel
                   </button>
                   <button
-                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                    onClick={() => {
-                      handleConfirmEvent();
-                      setShowShareModal(true);
-                      setShowShareModalCard(true)
-                    }}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 font-medium flex items-center justify-center space-x-2"
+                    onClick={handleConfirmEvent}
+                    disabled={isSubmitting}
                   >
-                    Confirm & Create
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Confirm & Create</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

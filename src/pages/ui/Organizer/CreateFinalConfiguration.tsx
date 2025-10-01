@@ -10,8 +10,6 @@ import {
   CheckCircle, 
   AlertTriangle,
   Sparkles,
-  TrendingUp,
-  Users,
   Copy,
   Facebook,
   MessageCircle,
@@ -49,6 +47,7 @@ function CreateFinalConfiguration({
   const [internalShowShareModal, setInternalShowShareModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [finalEventUrl, setFinalEventUrl] = useState('');
 
   const showConfirmation = externalShowConfirmation ?? internalShowConfirmation;
   const setShowConfirmation = externalSetShowConfirmation ?? setInternalShowConfirmation;
@@ -57,33 +56,89 @@ function CreateFinalConfiguration({
   const ShareModalCard = externalShareModalCard ?? false;
   const setShowShareModalCard = externalSetShowShareModalCard ?? (() => {});
 
-  // Generate event URL (this would be dynamic in real app)
-  const eventUrl = `https://shaderpay.com/event/${formData.eventName?.toLowerCase().replace(/\s+/g, '-') || 'my-event'}`;
-
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(eventUrl);
+    if (!finalEventUrl) return;
+    navigator.clipboard.writeText(finalEventUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  //   const eventUrl = `https://shaderpay.com/event/${formData.eventType}/${formData.eventName?.toLowerCase().replace(/\s+/g, '-') || 'my-event'}`;
+
+  // const handleCopyLink = () => {
+  //   navigator.clipboard.writeText(eventUrl);
+  //   if (!finalEventUrl) return;
+  //   navigator.clipboard.writeText(finalEventUrl);
+  //   setCopied(true);
+  //   setTimeout(() => setCopied(false), 2000);
+  // };
   const handleConfirmEvent = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Complete Event Data:', formData);
-    setIsSubmitting(false);
-    setShowConfirmation(false);
-    setShowShareModal(true);
+    
+    try {
+      // Prepare data for backend
+      const eventData = {
+        eventType: formData.eventType,
+        eventName: formData.eventName,
+        eventTitle: formData.eventTitle,
+        eventDescription: formData.eventDescription,
+        schoolId: formData.schoolId,
+        formColors: formData.formColors,
+        paymentMethods: formData.paymentMethods,
+        walletType: formData.walletType,
+        fundraisingGoal: formData.fundraisingGoal,
+        deadline: formData.deadline,
+        contributorMessage: formData.contributorMessage,
+        receiptConfig: formData.receiptConfig,
+        fields: formData.fields
+      };
+      
+      // Get JWT token from localStorage (if user is authenticated)
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch('http://localhost:5000/api/create/event', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: JSON.stringify(eventData)
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to create event');
+      }
+      
+      console.log('Event created successfully:', result);
+      
+      // Set the final, correct URL returned from the backend
+      setFinalEventUrl(result.data.eventUrl);
+      // Show success message or redirect
+      setShowConfirmation(false);
+      setShowShareModal(true);
+      
+    } catch (error) {
+      console.error('Error creating event:', error);
+      // You might want to show an error message to the user here
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      alert(`Error creating event: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openWhatsApp = () => {
-    const text = `Join/support "${formData.eventName}" here: ${eventUrl}`;
+    if (!finalEventUrl) return;
+    const text = `Join/support "${formData.eventName}" here: ${finalEventUrl}`;
     const href = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(href, '_blank', 'noopener,noreferrer');
   };
 
   const openFacebook = () => {
-    const href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(eventUrl)}`;
+    if (!finalEventUrl) return;
+    const href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(finalEventUrl)}`;
     window.open(href, '_blank', 'noopener,noreferrer');
   };
 
@@ -101,6 +156,13 @@ function CreateFinalConfiguration({
   };
 
   const daysUntilDeadline = calculateDaysUntilDeadline();
+
+  const formatDateForInput = (isoString: string | undefined) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    // Convert to local datetime format (YYYY-MM-DDTHH:MM)
+    return date.toISOString().slice(0, 16);
+  };
 
   return (
     <motion.div 
@@ -154,7 +216,7 @@ function CreateFinalConfiguration({
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { value: 'app_wallet', label: 'App Wallet', icon: '👛', desc: 'Instant access' },
-                    { value: 'bank_account', label: 'Bank Account', icon: '🏦', desc: 'Direct transfer' }
+                    { value: 'direct', label: 'Direct Payment', icon: '💳', desc: 'Direct transfer' }
                   ].map((option) => (
                     <motion.label
                       key={option.value}
@@ -173,7 +235,7 @@ function CreateFinalConfiguration({
                         checked={formData.walletType === option.value}
                         onChange={(e) => setFormData(prev => ({ 
                           ...prev, 
-                          walletType: e.target.value as 'app_wallet' | 'bank_account' 
+                          walletType: e.target.value as 'app_wallet' | 'direct' 
                         }))}
                         className="sr-only"
                       />
@@ -277,13 +339,18 @@ function CreateFinalConfiguration({
                 <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="datetime-local"
-                  className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl transition-all duration-200 ${
+                  className={`w-full pl-12 pr-4 py-4  border-2 rounded-xl transition-all duration-200 ${
                     deadlineError 
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-200' 
-                      : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'
+                    ? 'border-red-300  focus:border-red-500 focus:ring-red-200' 
+                    : 'border-gray-200  focus:border-purple-500 focus:ring-purple-200'
                   } focus:ring-4`}
-                  value={formData.deadline}
-                  onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                  value={formatDateForInput(formData.deadline)}
+                  // onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
+                  onChange={(e) => {
+                    const date = new Date(e.target.value);
+                    const isoString = date.toISOString();
+                    setFormData(prev => ({ ...prev, deadline: isoString }));
+                  }}
                   min={new Date().toISOString().slice(0, 16)}
                 />
               </div>
@@ -400,7 +467,7 @@ function CreateFinalConfiguration({
       </div>
 
       {/* Create Event Button - Only for non-school events */}
-      {formData.eventType !== 'school' && (
+      {formData.eventType !== 'SCHOOL' && (
         <motion.div 
           className="flex justify-center pt-8"
           initial={{ opacity: 0, y: 20 }}
@@ -520,7 +587,7 @@ function CreateFinalConfiguration({
                 <div className="flex items-center space-x-2">
                   <input
                     type="text"
-                    value={eventUrl}
+                    value={finalEventUrl}
                     readOnly
                     className="flex-1 p-3 bg-white border border-gray-200 rounded-lg text-sm"
                   />

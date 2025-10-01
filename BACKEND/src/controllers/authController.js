@@ -18,7 +18,7 @@ export const signUp = async (req,res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword, profile, role: "SCHOOL_ORGANIZER" },
+      data: { name, email, password: hashedPassword, profile, role: 'ORGANIZER' },
       select: {
         id: true,
         name: true,
@@ -53,27 +53,28 @@ export const login = async (req, res) => {
     // 🔍 Find user by email
     const user = await prisma.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        password: true,
-        role: true,
-        profile: true
-      }
+      include: {
+        // Also fetch the school-specific roles for the user
+        schoolAccesses: {
+          select: {
+            schoolId: true,
+            role: true,
+          },
+        },
+      },
     });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    console.log("Retrieved user:", {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      profile: user.profile
-    });
+    // console.log("Retrieved user:", {
+    //   id: user.id,
+    //   name: user.name,
+    //   email: user.email,
+    //   role: user.role,
+    //   profile: user.profile
+    // });
 
     // 🔑 Verify password
     const isMatch = await bcrypt.compare(password, user.password);
@@ -81,13 +82,15 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // 🎫 Generate token with id, role, name
-    console.log("Generating token with:", { id: user.id, role: user.role, name: user.name });
-    const token = generateToken({
+    // 🎫 Generate token with id, name, platform role, and school roles
+    const tokenPayload = {
       id: user.id,
+      name: user.name,
       role: user.role,
-      name: user.name
-    });
+      schoolRoles: user.schoolAccesses, // This will be an array like [{ schoolId, role }, ...]
+    };
+    // console.log("Generating token with payload:", tokenPayload);
+    const token = generateToken(tokenPayload);
 
     console.log("Login successful ✅");
 
@@ -174,7 +177,7 @@ export const updateProfile = async (req, res) => {
       }
     });
 
-    console.log("Profile updated:", updatedUser);
+    console.log("Profile updated:");
 
     res.status(200).json({
       message: "Profile updated successfully",
@@ -233,7 +236,7 @@ export const changePassword = async (req, res) => {
       data: { password: hashedNewPassword }
     });
 
-    console.log("Password changed successfully for user:", userId);
+    console.log("Password changed successfully for user:");
 
     res.status(200).json({
       message: "Password changed successfully"
@@ -243,4 +246,3 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
